@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Fanta-Accademia 2026</title>
+  <meta name="description" content="Il gioco goliardico definitivo sulla vita universitaria e accademica. Schiera i tuoi docenti e colleghi preferiti, accumula CFA e scala la classifica!">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%22><text y=%2226%22 font-size=%2226%22>🏛️</text></svg>">
+</head>
+<body>
+
+  <!-- ============================================================
+       GATEKEEPER OVERLAY (SICUREZZA ACCESSO GLOBALE)
+       ============================================================ -->
+  <div id="gatekeeperOverlay">
+    <div class="gatekeeper-card">
+      <div class="gate-badge">
+        <span>🔒 Area Riservata Accademia</span>
+      </div>
+      <div class="gate-icon-wrap">🏛️</div>
+      <h2 class="gate-title">Fanta-Accademia</h2>
+      <p class="gate-subtitle">Inserisci la parola d'ordine accademica per accedere al portale della stagione 2026.</p>
+
+      <div class="gate-input-group">
+        <input type="password" id="gatekeeperPassword" class="gate-input" placeholder="Parola d'ordine segreta..." autocomplete="off">
+        <button type="button" id="toggleGatePwd" class="toggle-pwd-btn" title="Mostra/Nascondi password">👁️</button>
+      </div>
+
+      <button type="button" id="gatekeeperSubmit" class="gate-btn">
+        <span>Sblocca Portale</span>
+        <span>→</span>
+      </button>
+
+      <div class="gate-hint">
+        Password di accesso al sito: <code>FantaAccademia2026!</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       TOP HEADER
+       ============================================================ -->
+  <header class="app-header">
+    <div class="header-brand" onclick="app.switchTab('home')">
+      <div class="brand-logo">🏛️</div>
+      <div class="brand-text">
+        <h1>FANTA-ACCADEMIA</h1>
+        <span>Edizione 2026</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <button class="user-badge-btn" id="userBadgeBtn" title="Gestisci Profilo">
+        <span class="user-badge-avatar" id="headerUserAvatar">👤</span>
+        <span class="user-badge-name" id="headerUserName">Accedi</span>
+        <span class="user-badge-role" id="headerUserRole">Allenatore</span>
+      </button>
+
+      <button type="button" class="btn-logout" id="logoutBtn" style="display: none;" title="Disconnettiti dal profilo">
+        <span>Esci</span>
+        <span>🚪</span>
+      </button>
+
+      <button class="icon-btn" id="soundToggleBtn" title="Attiva/Disattiva Suoni">🔊</button>
+      <button class="icon-btn" onclick="app.lockGatekeeper()" title="Blocca Sito (Schermata Password)">🔒</button>
+    </div>
+  </header>
+
+  <!-- ============================================================
+       DESKTOP NAVIGATION BAR
+       ============================================================ -->
+  <nav class="desktop-nav">
+    <button class="nav-tab-btn active" data-tab="home">
+      <span>🏠 Home & Avvisi</span>
+    </button>
+    <button class="nav-tab-btn" data-tab="squadra">
+      <span>⚽ La Mia Squadra</span>
+    </button>
+    <button class="nav-tab-btn" data-tab="classifica">
+      <span>🏆 Classifica Live</span>
+    </button>
+    <button class="nav-tab-btn" data-tab="personaggi">
+      <span>👥 Personaggi & CFA</span>
+    </button>
+    <button class="nav-tab-btn" data-tab="regolamento">
+      <span>📜 Regolamento</span>
+    </button>
+    <button class="nav-tab-btn" data-tab="secret">
+      <span>🕵️ Secret Rules</span>
+      <span class="nav-badge-pill">Classificato</span>
+    </button>
+    <button class="nav-tab-btn" data-tab="social">
+      <span>📸 Bacheca Social</span>
+    </button>
+    <button class="nav-tab-btn" data-tab="soffiate">
+      <span>👑 Soffiate Master</span>
+      <span class="nav-badge-gold">Esclusivo</span>
+    </button>
+    <button class="nav-tab-btn nav-master-only" data-tab="master" style="display: none;">
+      <span>⚡ Pannello Master</span>
+      <span class="nav-badge-gold">ADMIN</span>
+    </button>
+  </nav>
+
+  <!-- ============================================================
+       COUNTDOWN BANNER (DOMENICA 18 OTTOBRE 2026 A MEZZANOTTE)
+       ============================================================ -->
+  <div class="countdown-banner">
+    <div class="countdown-container">
+      <div class="countdown-info">
+        <div class="countdown-icon-pulse">⏳</div>
+        <div class="countdown-text">
+          <h2>Chiusura Creazione Squadre <span>• Ufficiale</span></h2>
+          <p>Scadenza perentoria: <strong>Domenica 18 Ottobre 2026, ore 23:59:59</strong></p>
+        </div>
+      </div>
+
+      <div class="countdown-timer">
+        <div class="timer-box">
+          <div class="timer-num" id="countDays">00</div>
+          <div class="timer-label">Giorni</div>
+        </div>
+        <div class="timer-colon">:</div>
+        <div class="timer-box">
+          <div class="timer-num" id="countHours">00</div>
+          <div class="timer-label">Ore</div>
+        </div>
+        <div class="timer-colon">:</div>
+        <div class="timer-box">
+          <div class="timer-num" id="countMins">00</div>
+          <div class="timer-label">Min</div>
+        </div>
+        <div class="timer-colon">:</div>
+        <div class="timer-box">
+          <div class="timer-num" id="countSecs">00</div>
+          <div class="timer-label">Sec</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MAIN CONTENT CONTAINER
+       ============================================================ -->
+  <main class="main-content">
+
+    <!-- 1. TAB: HOME -->
+    <section id="tab-home" class="tab-section active">
+      <div class="hero-banner">
+        <div class="hero-tag">✨ Benvenuti all'Accademia delle Belle Arti</div>
+        <h2 class="hero-title">Fanta-Accademia 2026</h2>
+        <p class="hero-desc">
+          Il fanta-campionato goliardico non ufficiale per gli studenti dell'Accademia. Componi la tua squadra con <strong>4 Docenti + 1 Collega</strong> spendendo massimo <strong>100 CFA</strong>, invia le prove delle nefandezze d'aula e conquista la vetta della classifica!
+        </p>
+
+        <div class="hero-stats">
+          <div class="stat-pill">
+            <span class="stat-icon">💰</span>
+            <div class="stat-data">
+              <strong>100 CFA</strong>
+              <span>Budget Totale</span>
+            </div>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-icon">👨‍🏫</span>
+            <div class="stat-data">
+              <strong>20 Docenti</strong>
+              <span>Nel Database</span>
+            </div>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-icon">🎓</span>
+            <div class="stat-data">
+              <strong>12 Allenatori</strong>
+              <span>In Gara</span>
+            </div>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-icon">📋</span>
+            <div class="stat-data">
+              <strong id="statConfirmedTeams">0 / 12</strong>
+              <span>Squadre Confermate</span>
+            </div>
+          </div>
+          <div class="stat-pill">
+            <span class="stat-icon">📸</span>
+            <div class="stat-data">
+              <strong id="statApprovedEvents">0</strong>
+              <span>Eventi Approvati</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Callout con Lucchetto in Home per chi non ha confermato la squadra -->
+      <div id="homeLockedCallout"></div>
+
+      <div class="section-header">
+        <div>
+          <h2 class="section-title"><span class="title-icon">📢</span> Avvisi Ufficiali</h2>
+          <p class="section-subtitle">Comunicazioni ufficiali e scadenze del Master Martina</p>
+        </div>
+      </div>
+
+      <div id="homeNoticesList"></div>
+    </section>
+
+    <!-- 2. TAB: LA MIA SQUADRA / MERCATO -->
+    <section id="tab-squadra" class="tab-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title"><span class="title-icon">⚽</span> Gestione Squadra & Mercato CFA</h2>
+          <p class="section-subtitle">Regola Obbligatoria: EXACTLY 4 Docenti + 1 Collega. Budget Massimo: 100 CFA.</p>
+        </div>
+      </div>
+
+      <!-- Banner Squadra Sigillata (Visibile se confermata) -->
+      <div id="teamSealedBanner" class="team-sealed-banner" style="display: none;">
+        <div class="team-sealed-title">
+          <span>🔒</span>
+          <span>Squadra Ufficiale Confermata e Sigillata!</span>
+        </div>
+        <span style="font-size: 0.85rem; color: #a7f3d0;">
+          La tua squadra è definitiva e non è più modificabile.
+        </span>
+      </div>
+
+      <div class="builder-dashboard">
+        <div class="builder-header">
+          <div class="cfa-budget-meter">
+            <div class="cfa-circle">
+              <strong id="builderCfaRemaining">100</strong>
+              <span>CFA Liberi</span>
+            </div>
+            <div class="cfa-details">
+              <h3>Spesi: <span id="builderCfaSpent" style="color: #67e8f9;">0</span> / 100 CFA</h3>
+              <p>Componi la combinazione perfetta per massimizzare bonus ed evitare i malus devastanti.</p>
+            </div>
+          </div>
+
+          <div style="font-size: 0.85rem; color: var(--text-muted); background: rgba(0,0,0,0.3); padding: 10px 14px; border-radius: 8px;">
+            ⚠️ <strong>Regola di Auto-Esclusione:</strong> Non puoi selezionare te stesso come Collega!<br>
+            ✨ Scegli accuratamente 4 Docenti e 1 Collega entro il budget di 100 CFA.
+          </div>
+        </div>
+
+        <!-- 5 Slot Squadra (4 Docenti + 1 Collega) -->
+        <h4 style="font-size: 0.85rem; text-transform: uppercase; color: var(--text-dark); margin-bottom: 12px; font-weight: 800;">
+          I tuoi 5 Slot Titolari
+        </h4>
+        <div class="slots-container" id="builderSlots"></div>
+
+        <button type="button" id="btnConfirmSquad" class="btn-confirm-squad" onclick="app.confirmSquad()">
+          ✨ Conferma e Blocca Definitivamente la Squadra
+        </button>
+      </div>
+
+      <!-- Tabella Scelta Docenti (Mercato) -->
+      <h3 style="color: #fff; font-size: 1.25rem; font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+        <span>👨‍🏫</span> Scegli i 4 Docenti (Database 20 Professori)
+      </h3>
+      <div class="grid-4" id="docentiMarketList" style="margin-bottom: 34px;"></div>
+
+      <!-- Tabella Scelta Collega (Mercato) -->
+      <h3 style="color: #fff; font-size: 1.25rem; font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+        <span>🎓</span> Scegli il Collega Compagno di Banco (1 Obbligatorio)
+      </h3>
+      <div class="grid-4" id="colleghiMarketList"></div>
+    </section>
+
+    <!-- 3. TAB: CLASSIFICA LIVE -->
+    <section id="tab-classifica" class="tab-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title"><span class="title-icon">🏆</span> Classifica Generale Live</h2>
+          <p class="section-subtitle">Punti aggiornati in tempo reale con dettaglio della squadra e storico eventi di ogni allenatore</p>
+        </div>
+      </div>
+
+      <div class="card leaderboard-table-card">
+        <table class="fanta-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Allenatore</th>
+              <th>Squadra Schierata (4 Docenti + 1 Collega)</th>
+              <th>CFA Spesi</th>
+              <th>Punti Totali</th>
+              <th>Azione</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4. TAB: CATALOGO PERSONAGGI & CFA -->
+    <section id="tab-personaggi" class="tab-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title"><span class="title-icon">👥</span> Catalogo Personaggi & Costi CFA</h2>
+          <p class="section-subtitle">Tutti i 20 Docenti e 12 Colleghi con le descrizioni ufficiali e le quotazioni</p>
+        </div>
+      </div>
+
+      <h3 style="color: #fbbf24; font-size: 1.25rem; font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+        <span>🎓</span> Colleghi in Lista (12 Studenti)
+      </h3>
+      <div class="grid-4" id="catalogColleghiList" style="margin-bottom: 34px;"></div>
+
+      <h3 style="color: #67e8f9; font-size: 1.25rem; font-weight: 800; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+        <span>👨‍🏫</span> I 20 Docenti Divisi per Fasce di Costo
+      </h3>
+      <div id="catalogDocentiList"></div>
+    </section>
+
+    <!-- 5. TAB: REGOLAMENTO GENERALE -->
+    <section id="tab-regolamento" class="tab-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title"><span class="title-icon">📜</span> Regolamento Ufficiale Bonus & Malus</h2>
+          <p class="section-subtitle">Tabella completa di tutte le dinamiche d'aula, vita da campus ed eventi specifici</p>
+        </div>
+      </div>
+
+      <div class="grid-2" style="margin-bottom: 28px;">
+        <div class="card">
+          <h3 style="color: #67e8f9; font-size: 1.15rem; margin-bottom: 14px;">A. Attività & Lezioni Generali</h3>
+          <div id="regolamentoAttivitaList"></div>
+        </div>
+
+        <div class="card">
+          <h3 style="color: #fbbf24; font-size: 1.15rem; margin-bottom: 14px;">B. Vita da Campus & Lore Accademica</h3>
+          <div id="regolamentoCampusList"></div>
+        </div>
+      </div>
+
+      <h3 style="color: #fff; font-size: 1.25rem; font-weight: 800; margin-bottom: 14px;">
+        D. Eventi Specifici dei 20 Docenti
+      </h3>
+      <div id="regolamentoDocentiSpecifici" class="grid-2"></div>
+    </section>
+
+    <!-- 6. TAB: SECRET RULES (REGOLE SEGRETE COLLEGHI) -->
+    <section id="tab-secret" class="tab-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title"><span class="title-icon">🕵️</span> Secret Rules (Regole Segrete Colleghi)</h2>
+          <p class="section-subtitle">
+            Attenzione: la regola è mostrata <strong>DECRIPTATA / SBLOCCATA</strong> solo per il collega che hai schierato nella tua squadra confermata!
+          </p>
+        </div>
+      </div>
+
+      <div class="secret-rules-grid" id="secretRulesList"></div>
+    </section>
+
+    <!-- 7. TAB: BACHECA SOCIAL & SEGNALAZIONI -->
+    <section id="tab-social" class="tab-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title"><span class="title-icon">📸</span> Bacheca Segnalazioni Community</h2>
+          <p class="section-subtitle">Avvistamenti d'aula, meme, prove fotografiche ed eventi sottoposti al Master</p>
+        </div>
+        <div>
+          <button type="button" class="btn-confirm-squad" id="btnOpenNewReportModal" style="padding: 10px 20px; font-size: 0.95rem;">
+            + Invia Nuova Segnalazione
+          </button>
+        </div>
+      </div>
+
+      <div id="socialReportsList"></div>
+    </section>
+
+    <!-- 8. TAB: SOFFIATE DAL MASTER (ESCLUSIVA) -->
+    <section id="tab-soffiate" class="tab-section">
+      <div class="section-header">
+        <div>
+          <h2 class="section-title"><span class="title-icon">👑</span> Soffiate dal Master (Area Riservata)</h2>
+          <p class="section-subtitle">Gossip confidenziale, probabilità di bonus e leak dal collegio docenti</p>
+        </div>
+      </div>
+
+      <!-- Schermata misteriosa: non svela come sbloccarla -->
+      <div id="masterTipsLockedMsg" class="card" style="text-align: center; padding: 48px 24px; border: 1.5px dashed rgba(245, 158, 11, 0.4);">
+        <div style="font-size: 3.5rem; margin-bottom: 14px;">🔒</div>
+        <h3 style="font-size: 1.3rem; color: #fff; margin-bottom: 8px;">Sezione ad Accesso Riservato</h3>
+        <p style="color: var(--text-muted); max-width: 520px; margin: 0 auto;">
+          Questo canale è protetto dal Master. Verrà sbloccato solo al verificarsi di determinate condizioni segrete di gioco!
+        </p>
+      </div>
+
+      <div id="masterTipsList" style="display: none;"></div>
+    </section>
+
+    <!-- 9. TAB: MASTER DASHBOARD (ADMIN - SOLO PER MARTINA) -->
+    <section id="tab-master" class="tab-section">
+      <div class="master-banner">
+        <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 12px;">
+          <span style="font-size: 2.5rem;">👑</span>
+          <div>
+            <h2 style="font-size: 1.5rem; color: #fbbf24; font-weight: 800;">Dashboard di Controllo Master</h2>
+            <p style="color: #fde68a; font-size: 0.9rem;">
+              Pannello di comando assoluto: assegna bonus/malus in tempo reale con 1 click, approva segnalazioni e gestisci le squadre.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- LIVE SCORING ENGINE -->
+      <div class="master-scoring-matrix">
+        <h3 style="color: #fbbf24; font-size: 1.25rem; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+          <span>⚡</span> Live Scoring: Aggiorna Punteggi in Tempo Reale
+        </h3>
+        <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 16px;">
+          Clicca su un <strong>Docente</strong> o <strong>Collega</strong> per visualizzare i suoi eventi bonus/malus. Con un singolo click assegnerai i punti a <strong>tutte le squadre confermate che possiedono quel personaggio</strong>!
+        </p>
+
+        <div class="matrix-char-picker" id="masterScoringCharChips"></div>
+        <div id="masterScoringSelectedInfo"></div>
+
+        <h4 style="font-size: 0.85rem; text-transform: uppercase; color: var(--text-dark); margin-bottom: 8px;">
+          Clicca su un evento per applicare il punteggio istantaneamente:
+        </h4>
+        <div class="matrix-events-grid" id="masterScoringEventsGrid"></div>
+      </div>
+
+      <!-- Sblocco d'Emergenza Squadra -->
+      <div class="card" style="margin-bottom: 24px; border: 1px solid rgba(139, 92, 246, 0.4);">
+        <h3 style="color: #fff; font-size: 1.15rem; margin-bottom: 8px; display: flex; align-items: center; gap: 8px;">
+          <span>🔓</span> Sblocco d'Emergenza Squadra Allenatore
+        </h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 14px;">
+          Se un allenatore ha commesso un errore e ti chiede di riaprire la squadra per modifiche:
+        </p>
+        <div style="display: flex; gap: 10px; max-width: 480px;">
+          <select id="masterUnlockCoachSelect" class="form-control" style="flex: 1;"></select>
+          <button type="button" class="btn-confirm-squad" style="width: auto; padding: 0 18px; font-size: 0.9rem;" onclick="app.masterUnlockCoach()">
+            Consenti Modifica
+          </button>
+        </div>
+      </div>
+
+      <!-- Sezione Segnalazioni in Attesa -->
+      <div class="card" style="margin-bottom: 24px;">
+        <h3 style="color: #fff; font-size: 1.2rem; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+          <span>⏳</span> Segnalazioni in Attesa di Giudizio Master
+        </h3>
+        <div id="masterPendingReportsList"></div>
+      </div>
+
+      <div class="grid-2">
+        <!-- Pubblica Avviso in Home -->
+        <div class="card">
+          <h3 style="color: #fff; font-size: 1.15rem; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+            <span>📢</span> Pubblica Avviso o Imprevisto in Home
+          </h3>
+          <form id="formNewNotice">
+            <div class="form-group">
+              <label class="form-label">Tipologia Avviso</label>
+              <select id="noticeTipoSelect" class="form-control">
+                <option value="IMPREVISTO SETTIMANALE">⚡ IMPREVISTO SETTIMANALE</option>
+                <option value="ANNUNCIO MASTER">⏳ ANNUNCIO MASTER</option>
+                <option value="LORE ALERT">👁️ LORE ALERT</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Titolo</label>
+              <input type="text" id="noticeTitoloInput" class="form-control" placeholder="Es. Guasto ascensore..." required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Descrizione / Effetto</label>
+              <textarea id="noticeTestoInput" class="form-control" rows="3" placeholder="Dettagli e variazioni di punteggio..." required></textarea>
+            </div>
+            <button type="submit" class="btn-confirm-squad" style="padding: 10px;">
+              Pubblica sulla Home
+            </button>
+          </form>
+        </div>
+
+        <!-- Assegna Punti Manuali Spot -->
+        <div class="card">
+          <h3 style="color: #fff; font-size: 1.15rem; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+            <span>⚖️</span> Assegnazione Manuale Punti Spot
+          </h3>
+          <form id="formManualPoints">
+            <div class="form-group">
+              <label class="form-label">Allenatore</label>
+              <select id="manualCoachSelect" class="form-control"></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Punti da Assegnare (+ o -)</label>
+              <input type="number" id="manualPointsInput" class="form-control" placeholder="Es. 50 o -30" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Motivazione</label>
+              <input type="text" id="manualMotivoInput" class="form-control" placeholder="Es. Bonus fedeltà aula magna" required>
+            </div>
+            <button type="submit" class="btn-confirm-squad" style="padding: 10px; background: linear-gradient(135deg, #f59e0b, #d97706);">
+              Applica Modifica Punti
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Nuova Soffiata dal Master -->
+      <div class="card" style="margin-top: 24px;">
+        <h3 style="color: #fbbf24; font-size: 1.15rem; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
+          <span>🔑</span> Pubblica Nuova "Soffiata dal Master"
+        </h3>
+        <form id="formNewTip">
+          <div class="form-group">
+            <label class="form-label">Titolo Soffiata</label>
+            <input type="text" id="tipTitoloInput" class="form-control" placeholder="Es. Segreto su Gucci e la borsa..." required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Contenuto Confidenziale</label>
+            <textarea id="tipTestoInput" class="form-control" rows="3" placeholder="Informazioni privilegiate per i tuoi discepoli..." required></textarea>
+          </div>
+          <button type="submit" class="btn-confirm-squad" style="padding: 10px; background: linear-gradient(135deg, #8b5cf6, #6d28d9);">
+            Salva nel Vault delle Soffiate
+          </button>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ============================================================
+       MOBILE BOTTOM NAVIGATION BAR
+       ============================================================ -->
+  <nav class="mobile-nav-bar">
+    <button class="mobile-nav-item active" data-tab="home">
+      <span class="icon">🏠</span>
+      <span class="label">Home</span>
+    </button>
+    <button class="mobile-nav-item" data-tab="squadra">
+      <span class="icon">⚽</span>
+      <span class="label">Squadra</span>
+    </button>
+    <button class="mobile-nav-item" data-tab="classifica">
+      <span class="icon">🏆</span>
+      <span class="label">Classifica</span>
+    </button>
+    <button class="mobile-nav-item" data-tab="secret">
+      <span class="icon">🕵️</span>
+      <span class="label">Secret</span>
+    </button>
+    <button class="mobile-nav-item" data-tab="social">
+      <span class="icon">📸</span>
+      <span class="label">Bacheca</span>
+    </button>
+    <button class="mobile-nav-item nav-master-only" data-tab="master" style="display: none;">
+      <span class="icon">👑</span>
+      <span class="label">Master</span>
+    </button>
+  </nav>
+
+  <!-- ============================================================
+       MODAL: LOGIN PROFILO ALLENATORE (SOLO NOME UTENTE E PASSWORD)
+       ============================================================ -->
+  <div id="loginModal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close-btn" data-close-modal>✕</button>
+      <div style="text-align: center; margin-bottom: 20px;">
+        <div style="font-size: 2.5rem; margin-bottom: 6px;">🔐</div>
+        <h3 style="color: #fff; font-size: 1.35rem; margin-bottom: 6px;">Accesso Allenatore</h3>
+        <p style="color: var(--text-muted); font-size: 0.88rem;">
+          Inserisci il tuo nome utente e la tua password personale per accedere al tuo profilo.
+        </p>
+      </div>
+
+      <form id="formManualLogin">
+        <div class="form-group">
+          <label class="form-label">Nome Utente</label>
+          <input type="text" id="loginUsername" class="form-control" placeholder="Es. Marco, Erika, Bea, Martina..." required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password Personale</label>
+          <input type="password" id="loginPassword" class="form-control" placeholder="Password personale..." required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn-confirm-squad" style="padding: 14px;">
+          Entra nel Fanta-Accademia
+        </button>
+      </form>
+
+      <div style="margin-top: 20px; font-size: 0.75rem; color: var(--text-dark); line-height: 1.4; text-align: center;">
+        In caso di smarrimento credenziali, rivolgiti direttamente al Master Martina.
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL: NUOVA SEGNALAZIONE SOCIAL
+       ============================================================ -->
+  <div id="newReportModal" class="modal-overlay">
+    <div class="modal-content">
+      <button class="modal-close-btn" data-close-modal>✕</button>
+      <h3 style="color: #fff; font-size: 1.35rem; margin-bottom: 8px;">Nuova Segnalazione d'Aula</h3>
+      <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 20px;">
+        Invia una prova o racconto di un evento accaduto per richiedere punti bonus o malus al Master.
+      </p>
+
+      <form id="formNewReport">
+        <div class="form-group">
+          <label class="form-label">Titolo Segnalazione *</label>
+          <input type="text" id="reportTitoloInput" class="form-control" placeholder="Es. Gucci si presenta con occhiali da sole in aula..." required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Personaggio Coinvolto *</label>
+          <select id="reportPersonaggioSelect" class="form-control" required></select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Categoria Evento dal Regolamento</label>
+          <select id="reportEventoSelect" class="form-control"></select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Oppure Categoria Personalizzata</label>
+          <input type="text" id="reportCustomCatInput" class="form-control" placeholder="Es. Aneddoto assurdo durante l'appello">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Punti Proposti (+ o -) *</label>
+          <input type="number" id="reportPuntiInput" class="form-control" value="25" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Descrizione / Testimonianza *</label>
+          <textarea id="reportDescInput" class="form-control" rows="3" placeholder="Racconta esattamente cosa è successo..." required></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">URL Foto / Prova (Opzionale)</label>
+          <input type="url" id="reportFotoUrlInput" class="form-control" placeholder="https://esempio.com/foto-prova.jpg">
+        </div>
+
+        <button type="submit" class="btn-confirm-squad" style="padding: 12px;">
+          🚀 Invia al Master e Pubblica
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL: DETTAGLI SQUADRA & STORICO PUNTI
+       ============================================================ -->
+  <div id="coachDetailsModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 650px;">
+      <button class="modal-close-btn" data-close-modal>✕</button>
+      <div id="coachDetailsModalBody"></div>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toastContainer"></div>
+
+  <!-- FIREBASE COMPAT SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <script>
+    // ============================================================
+    // FIREBASE CONFIGURATION — FANTA-ACCADEMIA 2026
+    // ============================================================
+    const firebaseConfig = {
+      apiKey: "AIzaSyCjl3rMindYJccsX2kLHjq9kJ1J4Fu8YvQ",
+      authDomain: "fanta-accademia-2026.firebaseapp.com",
+      databaseURL: "https://fanta-accademia-2026-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "fanta-accademia-2026",
+      storageBucket: "fanta-accademia-2026.firebasestorage.app",
+      messagingSenderId: "226279916275",
+      appId: "1:226279916275:web:1d11dcf72a999a0a68ad86"
+    };
+    firebase.initializeApp(firebaseConfig);
+    window.fantaDB = firebase.database();
+  </script>
+
+  <!-- SCRIPTS -->
+  <script src="data.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
