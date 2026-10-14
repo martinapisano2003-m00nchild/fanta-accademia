@@ -98,18 +98,19 @@ class FantaApp {
   }
 
   initStorage() {
-    // v4: migrazione a Firebase per le chiavi condivise
+    // v4: Firebase è la fonte di verità per le chiavi condivise.
+    // NON cancelliamo mai dati esistenti — solo aggiorniamo utenti locali e avviamo i listener.
+    // La prima volta che un dispositivo si connette, Firebase popolerà la cache tramite i listener.
+    // firebaseInitIfEmpty scrive i dati default SOLO se Firebase è completamente vuoto (primo avvio assoluto).
     if (localStorage.getItem('fanta_initialized_v4') !== 'true') {
-      // Pulisce dati locali vecchi
-      ['fanta_initialized_v3', 'fanta_teams', 'fanta_notices', 'fanta_reports', 'fanta_tips'].forEach(k => localStorage.removeItem(k));
-      // Scrivi dati iniziali su Firebase (solo se non esistono già)
+      // Solo al primissimo avvio assoluto: inizializza Firebase con dati default (se vuoto)
       this.firebaseInitIfEmpty('fanta_teams', INITIAL_TEAMS);
       this.firebaseInitIfEmpty('fanta_notices', INITIAL_NOTICES);
       this.firebaseInitIfEmpty('fanta_reports', INITIAL_REPORTS);
       this.firebaseInitIfEmpty('fanta_tips', MASTER_TIPS);
       localStorage.setItem('fanta_initialized_v4', 'true');
     }
-    // Sempre: resetta utenti locali (le credenziali non vanno su Firebase)
+    // Sempre: aggiorna credenziali utenti locali (mai su Firebase)
     localStorage.setItem('fanta_users', JSON.stringify(INITIAL_USERS));
     // Avvia i listener in tempo reale di Firebase
     this.startFirebaseListeners();
@@ -117,11 +118,15 @@ class FantaApp {
 
   firebaseInitIfEmpty(key, defaultVal) {
     if (!window.fantaDB) return;
+    // SICUREZZA: legge prima — scrive SOLO se la chiave non esiste affatto su Firebase
     window.fantaDB.ref(key).once('value').then(snap => {
       if (!snap.exists()) {
+        console.log(`[Firebase] Inizializzo ${key} con dati default (prima accensione)`);
         window.fantaDB.ref(key).set(defaultVal);
+      } else {
+        console.log(`[Firebase] ${key} già presente su Firebase — dati preservati`);
       }
-    }).catch(e => console.warn('Firebase init error for', key, e));
+    }).catch(e => console.warn('[Firebase] Errore init per', key, e));
   }
 
   startFirebaseListeners() {
@@ -259,7 +264,7 @@ class FantaApp {
 
       const days = Math.floor(diff / (1000 * 60 * 60 * 24));
       const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const mins = Math.floor((diff % (1000 * 60)) / 1000);
+      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
       const secs = Math.floor((diff % (1000 * 60)) / 1000);
 
       daysEl.innerText = String(days).padStart(2, '0');
@@ -850,10 +855,16 @@ class FantaApp {
       return;
     }
 
-    if (!confirm("Sei sicuro di voler confermare la tua squadra? Una volta confermata, sarà bloccata definitivamente e non potrai più modificarla!")) {
-      return;
-    }
+    // Modal di conferma personalizzato (sostituisce confirm() che è bloccato su iOS/Safari)
+    this.showConfirmModal(
+      "🔒 Conferma Squadra",
+      `Sei sicuro di voler confermare la tua squadra con <strong>${spent} CFA</strong>?<br><br>
+      ⚠️ Una volta confermata sarà <strong>bloccata definitivamente</strong> e non potrai più modificarla!`,
+      () => this._doConfirmSquad(spent)
+    );
+  }
 
+  _doConfirmSquad(spent) {
     const teams = this.getData('fanta_teams') || {};
     const myTeam = teams[this.currentUser.username] || {
       confirmed: false,
@@ -898,6 +909,57 @@ class FantaApp {
 
     this.render();
   }
+
+  showConfirmModal(title, message, onConfirm) {
+    // Rimuove eventuali modal precedenti
+    const existing = document.getElementById('customConfirmModal');
+    if (existing) existing.remove();
+
+    const modal = document.createElement('div');
+    modal.id = 'customConfirmModal';
+    modal.style.cssText = `
+      position: fixed; inset: 0; z-index: 99998;
+      background: rgba(0,0,0,0.75); display: flex;
+      align-items: center; justify-content: center; padding: 20px;
+    `;
+    modal.innerHTML = `
+      <div style="
+        background: linear-gradient(135deg, #1a1f35 0%, #0e1423 100%);
+        border: 1px solid rgba(251,191,36,0.3);
+        border-radius: 16px; padding: 28px 24px;
+        max-width: 420px; width: 100%;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+        text-align: center;
+      ">
+        <div style="font-size: 2rem; margin-bottom: 12px;">🔒</div>
+        <h3 style="color: #fbbf24; margin: 0 0 14px; font-size: 1.1rem;">${title}</h3>
+        <p style="color: #cbd5e1; font-size: 0.92rem; line-height: 1.6; margin: 0 0 24px;">${message}</p>
+        <div style="display: flex; gap: 12px; justify-content: center;">
+          <button id="confirmModalCancel" style="
+            flex: 1; padding: 12px; border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.15);
+            background: rgba(255,255,255,0.05); color: #94a3b8;
+            font-size: 0.9rem; cursor: pointer; font-weight: 600;
+          ">❌ Annulla</button>
+          <button id="confirmModalOk" style="
+            flex: 1; padding: 12px; border-radius: 8px;
+            border: 1px solid rgba(251,191,36,0.4);
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #000; font-size: 0.9rem; cursor: pointer; font-weight: 700;
+          ">✅ Conferma</button>
+        </div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    document.getElementById('confirmModalOk').onclick = () => {
+      modal.remove();
+      onConfirm();
+    };
+    document.getElementById('confirmModalCancel').onclick = () => modal.remove();
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+  }
+
 
   fireConfetti() {
     const conf = document.createElement('div');
