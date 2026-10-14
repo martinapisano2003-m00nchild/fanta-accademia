@@ -866,13 +866,29 @@ class FantaApp {
 
   _doConfirmSquad(spent) {
     const teams = this.getData('fanta_teams') || {};
-    const myTeam = teams[this.currentUser.username] || {
+
+    // Merge con i default per garantire che tutti i campi esistano
+    // (i dati Firebase potrebbero mancare di puntiBase/puntiStorico se re-inseriti manualmente)
+    const existingTeam = teams[this.currentUser.username] || {};
+    const myTeam = {
       confirmed: false,
       puntiBase: 0,
-      puntiStorico: []
+      puntiStorico: [],
+      docenti: [],
+      collega: null,
+      cfaSpesi: 0,
+      ...existingTeam
     };
 
+    // Assicura che puntiStorico sia sempre un array (sicurezza extra)
+    if (!Array.isArray(myTeam.puntiStorico)) myTeam.puntiStorico = [];
+    if (typeof myTeam.puntiBase !== 'number') myTeam.puntiBase = 0;
+
     const selectedCollegaObj = COLLEGHI.find(c => c.id === this.selectedCollega);
+    if (!selectedCollegaObj) {
+      this.showToast("⚠️ Errore: collega non trovato. Riprova.", "danger");
+      return;
+    }
 
     myTeam.confirmed = true;
     myTeam.docenti = [...this.selectedDocenti];
@@ -909,6 +925,7 @@ class FantaApp {
 
     this.render();
   }
+
 
   showConfirmModal(title, message, onConfirm) {
     // Rimuove eventuali modal precedenti
