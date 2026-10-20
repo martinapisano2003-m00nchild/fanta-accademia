@@ -6,13 +6,13 @@ const GLOBAL_PASSWORD = "FantaAccademia2026!";
 const SQUAD_DEADLINE = "2026-10-18T23:59:59"; // Domenica 18 Ottobre 2026, Mezzanotte
 
 // 1. CREDENZIALI ALLENATORI E RUOLI (Accesso esclusivo tramite Username e Password Personale)
+// NOTA: Elisa ha abbandonato il gioco — rimossa da tutti i sistemi
 const INITIAL_USERS = [
   { username: "Marco", password: "MarcoFanta2026!", role: "coach", avatar: "👨‍💼", bio: "Ex-presidente della consulta? Focus strategico e adrenalina pura." },
   { username: "Erika", password: "ErikaFanta2026!", role: "coach", avatar: "🧝‍♀️", bio: "Cosplayer di precisione millimetrica. Nessun malus nel suo destino!" },
   { username: "Bea", password: "BeaFanta2026!", role: "coach", avatar: "🎀", bio: "Borsa traboccante di peluche e odio represso per la fisica applicata all'arte." },
   { username: "Davi", password: "DaviFanta2026!", role: "coach", avatar: "🏃‍♂️", bio: "In corsa perpetua contro il blocco di laurea di Cavalluccio." },
   { username: "Mar", password: "MarFanta2026!", role: "coach", avatar: "🍷", bio: "Tra il vino da Meowali e il 30 e lode c'è solo un bicchiere di distanza." },
-  { username: "Elisa", password: "ElisaFanta2026!", role: "coach", avatar: "😩", bio: "Pronuncia 'non ce la faccio più' 47 volte al giorno. Punti facili." },
   { username: "Moka", password: "MokaFanta2026!", role: "coach", avatar: "☕", bio: "Zen totale. Zero bonus, zero malus, pura stabilità quantistica." },
   { username: "Leryn", password: "LerynFanta2026!", role: "coach", avatar: "📚", bio: "L'eroe del triennio rapido: o svuota il libretto o diserta al primo anno." },
   { username: "Masi", password: "MasiFanta2026!", role: "coach", avatar: "⏰", bio: "Se varca il cancello e supera l'ora di permanenza è già festa patronale." },
@@ -278,7 +278,7 @@ const DOCENTI = [
   }
 ];
 
-// 3. DATABASE COLLEGHI (12 PERSONAGGI - SENZA SPOILER DEI BONUS SEGRETI)
+// 3. DATABASE COLLEGHI (11 PERSONAGGI — Elisa rimossa)
 const COLLEGHI = [
   // Costosi (18 CFA)
   {
@@ -341,18 +341,6 @@ const COLLEGHI = [
     secretRules: [
       { id: "mar-ubriaco", tipo: "bonus", pt: 40, desc: "Si ubriaca da Meowali (+40 pt ogni volta)" },
       { id: "mar-lode", tipo: "malus", pt: -10, desc: "Prende 30 e lode (-10 pt ogni volta - troppo secchione!)" }
-    ]
-  },
-  {
-    id: "collega-elisa",
-    nome: "Elisa",
-    fascia: "Medio",
-    costoCFA: 12,
-    avatar: "😫",
-    bio: "Barometro dello stress collettivo: ogni sospiro è una rendita per la squadra.",
-    secretRules: [
-      { id: "elisa-noncelafaccio", tipo: "bonus", pt: 5, desc: "Dice di non farcela più (+5 pt ogni singola volta)" },
-      { id: "elisa-incazzatura", tipo: "malus", pt: -10, desc: "Si incazza con uno di noi (-10 pt ogni volta)" }
     ]
   },
   {
@@ -470,30 +458,30 @@ const MASTER_TIPS = [
   }
 ];
 
-// 6. AVVISI INIZIALI: SOLO LA SCADENZA UFFICIALE
+// 6. AVVISI INIZIALI
 const INITIAL_NOTICES = [
   {
-    id: "notice-deadline",
+    id: "notice-season-open",
     tipo: "ANNUNCIO MASTER",
-    icona: "⏳",
+    icona: "🏆",
     badge: "Ufficiale",
-    titolo: "COUNTDOWN CHIUSURA SQUADRE: DOMENICA 18 OTTOBRE A MEZZANOTTE",
-    data: "13 Ottobre 2026",
-    testo: "Allenatori ricordatevi di confermare la vostra squadra (4 Docenti + 1 Collega) con budget massimo di 100 CFA entro la mezzanotte di Domenica 18 Ottobre 2026. Una volta confermata, la squadra sarà bloccata definitivamente!"
+    titolo: "🎓 EDIZIONE PRIMO SEMESTRE 2026 IN CORSO!",
+    data: "20 Ottobre 2026",
+    testo: "Le iscrizioni sono chiuse. Tutte le squadre sono state formate. Che il gioco abbia inizio! Segui la classifica live e segnala gli eventi dalla bacheca social."
   }
 ];
 
 // 7. BACHECA SOCIAL PULITA
 const INITIAL_REPORTS = [];
 
-// 8. SQUADRE PULITE
+// 8. SQUADRE PULITE (fallback — i dati reali sono su Firebase)
+// NOTA: Elisa rimossa. I punteggi reali sono su Firebase (non qui).
 const INITIAL_TEAMS = {
   Marco:   { confirmed: false, docenti: [], collega: null, cfaSpesi: 0, puntiBase: 0, puntiStorico: [] },
   Erika:   { confirmed: false, docenti: [], collega: null, cfaSpesi: 0, puntiBase: 0, puntiStorico: [] },
   Bea:     { confirmed: false, docenti: [], collega: null, cfaSpesi: 0, puntiBase: 0, puntiStorico: [] },
   Davi:    { confirmed: false, docenti: [], collega: null, cfaSpesi: 0, puntiBase: 0, puntiStorico: [] },
   Mar:     { confirmed: false, docenti: [], collega: null, cfaSpesi: 0, puntiBase: 0, puntiStorico: [] },
-  Elisa:   { confirmed: false, docenti: [], collega: null, cfaSpesi: 0, puntiBase: 0, puntiStorico: [] },
   Moka:    { confirmed: false, docenti: [], collega: null, cfaSpesi: 0, puntiBase: 0, puntiStorico: [] },
   Leryn:   { confirmed: false, docenti: [], collega: null, cfaSpesi: 0, puntiBase: 0, puntiStorico: [] },
   Masi:    { confirmed: false, docenti: [], collega: null, cfaSpesi: 0, puntiBase: 0, puntiStorico: [] },
@@ -501,3 +489,163 @@ const INITIAL_TEAMS = {
   Nicole:  { confirmed: false, docenti: [], collega: null, cfaSpesi: 0, puntiBase: 0, puntiStorico: [] },
   Martina: { confirmed: false, docenti: [], collega: null, cfaSpesi: 0, puntiBase: 0, puntiStorico: [] }
 };
+
+// 9. PALETTE DI COLORI PERSONALIZZATE PER PROFILO UTENTE (DARK THEME IMMERSIVO)
+const COLOR_PALETTES = [
+  {
+    id: "default",
+    nome: "Viola Cyber (Default)",
+    emoji: "🟣",
+    vars: {
+      "--bg-main": "#0c0919",
+      "--bg-card": "rgba(26, 20, 48, 0.82)",
+      "--bg-card-hover": "rgba(38, 28, 70, 0.92)",
+      "--bg-surface": "#140f28",
+      "--bg-glass": "rgba(20, 15, 40, 0.75)",
+      "--border-color": "rgba(139, 92, 246, 0.25)",
+      "--border-glow": "rgba(168, 85, 247, 0.45)",
+      "--primary": "#8b5cf6",
+      "--primary-light": "#a78bfa",
+      "--primary-glow": "rgba(139, 92, 246, 0.4)",
+      "--accent": "#c084fc",
+      "--header-bg": "rgba(12, 9, 25, 0.94)",
+      "--nav-bg": "rgba(12, 9, 25, 0.96)",
+      "--hero-bg": "linear-gradient(135deg, rgba(46, 26, 92, 0.85), rgba(20, 12, 44, 0.92))",
+      "--builder-bg": "linear-gradient(135deg, rgba(38, 22, 78, 0.9), rgba(18, 12, 38, 0.95))",
+      "--modal-bg": "linear-gradient(145deg, #1e133c, #100a22)",
+      "--glow-1": "rgba(139, 92, 246, 0.22)",
+      "--glow-2": "rgba(168, 85, 247, 0.16)",
+      "--glow-3": "rgba(192, 132, 252, 0.08)"
+    }
+  },
+  {
+    id: "rosso",
+    nome: "Rosso Passione",
+    emoji: "🔴",
+    vars: {
+      "--bg-main": "#16070a",
+      "--bg-card": "rgba(46, 16, 24, 0.82)",
+      "--bg-card-hover": "rgba(64, 22, 34, 0.92)",
+      "--bg-surface": "#240a12",
+      "--bg-glass": "rgba(36, 12, 20, 0.75)",
+      "--border-color": "rgba(239, 68, 68, 0.28)",
+      "--border-glow": "rgba(244, 63, 94, 0.45)",
+      "--primary": "#ef4444",
+      "--primary-light": "#f87171",
+      "--primary-glow": "rgba(239, 68, 68, 0.4)",
+      "--accent": "#fb7185",
+      "--header-bg": "rgba(22, 7, 10, 0.94)",
+      "--nav-bg": "rgba(22, 7, 10, 0.96)",
+      "--hero-bg": "linear-gradient(135deg, rgba(82, 18, 30, 0.85), rgba(32, 8, 14, 0.92))",
+      "--builder-bg": "linear-gradient(135deg, rgba(72, 16, 28, 0.9), rgba(28, 8, 12, 0.95))",
+      "--modal-bg": "linear-gradient(145deg, #360f18, #180508)",
+      "--glow-1": "rgba(239, 68, 68, 0.22)",
+      "--glow-2": "rgba(244, 63, 94, 0.16)",
+      "--glow-3": "rgba(251, 113, 133, 0.08)"
+    }
+  },
+  {
+    id: "verde",
+    nome: "Verde Campus",
+    emoji: "🟢",
+    vars: {
+      "--bg-main": "#05140e",
+      "--bg-card": "rgba(12, 38, 28, 0.82)",
+      "--bg-card-hover": "rgba(18, 54, 40, 0.92)",
+      "--bg-surface": "#0a2218",
+      "--bg-glass": "rgba(10, 32, 24, 0.75)",
+      "--border-color": "rgba(16, 185, 129, 0.28)",
+      "--border-glow": "rgba(52, 211, 153, 0.45)",
+      "--primary": "#10b981",
+      "--primary-light": "#34d399",
+      "--primary-glow": "rgba(16, 185, 129, 0.4)",
+      "--accent": "#6ee7b7",
+      "--header-bg": "rgba(5, 20, 14, 0.94)",
+      "--nav-bg": "rgba(5, 20, 14, 0.96)",
+      "--hero-bg": "linear-gradient(135deg, rgba(16, 68, 48, 0.85), rgba(8, 28, 20, 0.92))",
+      "--builder-bg": "linear-gradient(135deg, rgba(14, 58, 42, 0.9), rgba(6, 24, 16, 0.95))",
+      "--modal-bg": "linear-gradient(145deg, #0f3826, #04120b)",
+      "--glow-1": "rgba(16, 185, 129, 0.22)",
+      "--glow-2": "rgba(52, 211, 153, 0.16)",
+      "--glow-3": "rgba(110, 231, 183, 0.08)"
+    }
+  },
+  {
+    id: "blu",
+    nome: "Blu Oceano",
+    emoji: "🔵",
+    vars: {
+      "--bg-main": "#061022",
+      "--bg-card": "rgba(14, 32, 60, 0.82)",
+      "--bg-card-hover": "rgba(20, 46, 86, 0.92)",
+      "--bg-surface": "#0c1d3c",
+      "--bg-glass": "rgba(12, 26, 50, 0.75)",
+      "--border-color": "rgba(59, 130, 246, 0.28)",
+      "--border-glow": "rgba(96, 165, 250, 0.45)",
+      "--primary": "#3b82f6",
+      "--primary-light": "#60a5fa",
+      "--primary-glow": "rgba(59, 130, 246, 0.4)",
+      "--accent": "#93c5fd",
+      "--header-bg": "rgba(6, 16, 34, 0.94)",
+      "--nav-bg": "rgba(6, 16, 34, 0.96)",
+      "--hero-bg": "linear-gradient(135deg, rgba(22, 56, 110, 0.85), rgba(8, 22, 48, 0.92))",
+      "--builder-bg": "linear-gradient(135deg, rgba(18, 48, 96, 0.9), rgba(8, 20, 42, 0.95))",
+      "--modal-bg": "linear-gradient(145deg, #10264e, #050e1f)",
+      "--glow-1": "rgba(59, 130, 246, 0.22)",
+      "--glow-2": "rgba(96, 165, 250, 0.16)",
+      "--glow-3": "rgba(147, 197, 253, 0.08)"
+    }
+  },
+  {
+    id: "oro",
+    nome: "Oro Master",
+    emoji: "🟡",
+    vars: {
+      "--bg-main": "#161005",
+      "--bg-card": "rgba(44, 30, 12, 0.82)",
+      "--bg-card-hover": "rgba(62, 42, 16, 0.92)",
+      "--bg-surface": "#241808",
+      "--bg-glass": "rgba(32, 22, 10, 0.75)",
+      "--border-color": "rgba(245, 158, 11, 0.3)",
+      "--border-glow": "rgba(251, 191, 36, 0.45)",
+      "--primary": "#f59e0b",
+      "--primary-light": "#fbbf24",
+      "--primary-glow": "rgba(245, 158, 11, 0.4)",
+      "--accent": "#fde047",
+      "--header-bg": "rgba(22, 16, 5, 0.94)",
+      "--nav-bg": "rgba(22, 16, 5, 0.96)",
+      "--hero-bg": "linear-gradient(135deg, rgba(84, 56, 16, 0.85), rgba(34, 22, 8, 0.92))",
+      "--builder-bg": "linear-gradient(135deg, rgba(72, 48, 14, 0.9), rgba(28, 18, 6, 0.95))",
+      "--modal-bg": "linear-gradient(145deg, #3c2a0c, #160f04)",
+      "--glow-1": "rgba(245, 158, 11, 0.22)",
+      "--glow-2": "rgba(251, 191, 36, 0.16)",
+      "--glow-3": "rgba(253, 224, 71, 0.08)"
+    }
+  },
+  {
+    id: "rosa",
+    nome: "Rosa Neon",
+    emoji: "🩷",
+    vars: {
+      "--bg-main": "#180614",
+      "--bg-card": "rgba(48, 14, 40, 0.82)",
+      "--bg-card-hover": "rgba(68, 20, 56, 0.92)",
+      "--bg-surface": "#280a22",
+      "--bg-glass": "rgba(36, 10, 30, 0.75)",
+      "--border-color": "rgba(236, 72, 153, 0.28)",
+      "--border-glow": "rgba(244, 114, 182, 0.45)",
+      "--primary": "#ec4899",
+      "--primary-light": "#f472b6",
+      "--primary-glow": "rgba(236, 72, 153, 0.4)",
+      "--accent": "#fbcfe8",
+      "--header-bg": "rgba(24, 6, 20, 0.94)",
+      "--nav-bg": "rgba(24, 6, 20, 0.96)",
+      "--hero-bg": "linear-gradient(135deg, rgba(86, 20, 70, 0.85), rgba(34, 8, 28, 0.92))",
+      "--builder-bg": "linear-gradient(135deg, rgba(74, 18, 60, 0.9), rgba(28, 8, 24, 0.95))",
+      "--modal-bg": "linear-gradient(145deg, #3a0e30, #180514)",
+      "--glow-1": "rgba(236, 72, 153, 0.22)",
+      "--glow-2": "rgba(244, 114, 182, 0.16)",
+      "--glow-3": "rgba(251, 207, 232, 0.08)"
+    }
+  }
+];

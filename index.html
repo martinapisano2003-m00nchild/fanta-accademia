@@ -104,39 +104,15 @@
   </nav>
 
   <!-- ============================================================
-       COUNTDOWN BANNER (DOMENICA 18 OTTOBRE 2026 A MEZZANOTTE)
+       SEASON BANNER (ISCRIZIONI CHIUSE — STAGIONE IN CORSO)
        ============================================================ -->
-  <div class="countdown-banner">
-    <div class="countdown-container">
-      <div class="countdown-info">
-        <div class="countdown-icon-pulse">⏳</div>
-        <div class="countdown-text">
-          <h2>Chiusura Creazione Squadre <span>• Ufficiale</span></h2>
-          <p>Scadenza perentoria: <strong>Domenica 18 Ottobre 2026, ore 23:59:59</strong></p>
-        </div>
-      </div>
-
-      <div class="countdown-timer">
-        <div class="timer-box">
-          <div class="timer-num" id="countDays">00</div>
-          <div class="timer-label">Giorni</div>
-        </div>
-        <div class="timer-colon">:</div>
-        <div class="timer-box">
-          <div class="timer-num" id="countHours">00</div>
-          <div class="timer-label">Ore</div>
-        </div>
-        <div class="timer-colon">:</div>
-        <div class="timer-box">
-          <div class="timer-num" id="countMins">00</div>
-          <div class="timer-label">Min</div>
-        </div>
-        <div class="timer-colon">:</div>
-        <div class="timer-box">
-          <div class="timer-num" id="countSecs">00</div>
-          <div class="timer-label">Sec</div>
-        </div>
-      </div>
+  <div class="season-active-banner">
+    <div class="season-banner-inner">
+      <span class="season-banner-icon">🏛️</span>
+      <span class="season-banner-text">
+        <strong>Iscrizioni chiuse</strong> — Edizione Primo Semestre 2026 in corso
+      </span>
+      <span class="season-banner-badge">🏆 LIVE</span>
     </div>
   </div>
 
@@ -172,14 +148,14 @@
           <div class="stat-pill">
             <span class="stat-icon">🎓</span>
             <div class="stat-data">
-              <strong>12 Allenatori</strong>
+              <strong>11 Allenatori</strong>
               <span>In Gara</span>
             </div>
           </div>
           <div class="stat-pill">
             <span class="stat-icon">📋</span>
             <div class="stat-data">
-              <strong id="statConfirmedTeams">0 / 12</strong>
+              <strong id="statConfirmedTeams">0 / 11</strong>
               <span>Squadre Confermate</span>
             </div>
           </div>
@@ -204,7 +180,11 @@
       </div>
 
       <div id="homeNoticesList"></div>
+
+      <!-- Sezione Profilo Personale (visibile solo se loggato) -->
+      <div id="userProfilePanel"></div>
     </section>
+
 
     <!-- 2. TAB: LA MIA SQUADRA / MERCATO -->
     <section id="tab-squadra" class="tab-section">
@@ -442,6 +422,40 @@
         </div>
       </div>
 
+      <!-- Nuovo Evento Diretto dal Master (Assegnazione Immediata senza passare dalla bacheca) -->
+      <div class="card" style="margin-bottom: 24px; border: 1.5px solid rgba(245, 158, 11, 0.45); background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(14, 20, 35, 0.95) 100%);">
+        <h3 style="color: #fbbf24; font-size: 1.2rem; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+          <span>⚡</span> Nuovo Evento Diretto dal Master (Assegna Subito Punti)
+        </h3>
+        <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 16px;">
+          Seleziona il personaggio, descrivi l'evento e scegli i punti (+ o -). Verranno accreditati <strong>immediatamente</strong> a tutte le squadre che lo possiedono e verrà pubblicato un annuncio ufficiale in Home!
+        </p>
+
+        <form id="formMasterDirectEvent">
+          <div class="form-group">
+            <label class="form-label">Personaggio Coinvolto *</label>
+            <select id="directEventCharSelect" class="form-control" required></select>
+          </div>
+          <div class="grid-2">
+            <div class="form-group">
+              <label class="form-label">Titolo Evento *</label>
+              <input type="text" id="directEventTitleInput" class="form-control" placeholder="Es. Gucci arriva con la borsa di marca..." required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Punti da Assegnare (+ o -) *</label>
+              <input type="number" id="directEventPointsInput" class="form-control" placeholder="Es. 25 oppure -15" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Descrizione / Motivazione Ufficiale *</label>
+            <textarea id="directEventDescInput" class="form-control" rows="2" placeholder="Descrivi brevemente l'evento..." required></textarea>
+          </div>
+          <button type="submit" class="btn-confirm-squad" style="padding: 12px; background: linear-gradient(135deg, #f59e0b, #d97706); color: #000; font-weight: 800;">
+            ⚡ Assegna Punti e Pubblica Ufficialmente
+          </button>
+        </form>
+      </div>
+
       <!-- Sezione Segnalazioni in Attesa -->
       <div class="card" style="margin-bottom: 24px;">
         <h3 style="color: #fff; font-size: 1.2rem; margin-bottom: 14px; display: flex; align-items: center; gap: 8px;">
@@ -617,8 +631,9 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Personaggio Coinvolto *</label>
-          <select id="reportPersonaggioSelect" class="form-control" required></select>
+          <label class="form-label">Personaggio/i Coinvolto/i * <span style="font-size: 0.78rem; color: #a78bfa; font-weight: normal;">(Seleziona uno o più personaggi cliccando sui badge)</span></label>
+          <div id="reportCharPickerMulti" class="char-picker-multi"></div>
+          <input type="hidden" id="reportSelectedCharsHidden" required>
         </div>
 
         <div class="form-group">
@@ -660,6 +675,16 @@
     <div class="modal-content" style="max-width: 650px;">
       <button class="modal-close-btn" data-close-modal>✕</button>
       <div id="coachDetailsModalBody"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL: PROFILO PERSONALE & PERSONALIZZAZIONE
+       ============================================================ -->
+  <div id="profileModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 540px;">
+      <button class="modal-close-btn" data-close-modal>✕</button>
+      <div id="profileModalBody"></div>
     </div>
   </div>
 

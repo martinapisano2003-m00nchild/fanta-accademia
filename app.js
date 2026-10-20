@@ -19,8 +19,11 @@ class FantaApp {
 
     this.initAudio();
     this.initDOM();
-    this.startCountdown();
+    if (this.currentUser) {
+      this.applyUserPalette(this.currentUser.username);
+    }
     this.render();
+    this.checkAndShowNewNotices();
 
     // Se l'utente non è autenticato e il gatekeeper è sbloccato, chiedi subito il login
     if (this.checkGatekeeper() && !this.currentUser) {
@@ -94,7 +97,7 @@ class FantaApp {
   // Keys synced via Firebase (shared across all devices)
   // Keys kept local: fanta_users, fanta_gatekeeper_unlocked, fanta_active_user, fanta_sound, fanta_initialized_v4
   get FIREBASE_KEYS() {
-    return ['fanta_teams', 'fanta_notices', 'fanta_reports', 'fanta_tips'];
+    return ['fanta_teams', 'fanta_notices', 'fanta_reports', 'fanta_tips', 'fanta_profiles'];
   }
 
   initStorage() {
@@ -108,6 +111,7 @@ class FantaApp {
       this.firebaseInitIfEmpty('fanta_notices', INITIAL_NOTICES);
       this.firebaseInitIfEmpty('fanta_reports', INITIAL_REPORTS);
       this.firebaseInitIfEmpty('fanta_tips', MASTER_TIPS);
+      this.firebaseInitIfEmpty('fanta_profiles', {});
       localStorage.setItem('fanta_initialized_v4', 'true');
     }
     // Sempre: aggiorna credenziali utenti locali (mai su Firebase)
@@ -154,7 +158,13 @@ class FantaApp {
         const cached = localStorage.getItem('_fb_cache_' + key);
         if (cached) return JSON.parse(cached);
         // Fallback ai dati iniziali se la cache non è ancora pronta
-        const defaults = { fanta_teams: INITIAL_TEAMS, fanta_notices: INITIAL_NOTICES, fanta_reports: INITIAL_REPORTS, fanta_tips: MASTER_TIPS };
+        const defaults = { 
+          fanta_teams: INITIAL_TEAMS, 
+          fanta_notices: INITIAL_NOTICES, 
+          fanta_reports: INITIAL_REPORTS, 
+          fanta_tips: MASTER_TIPS,
+          fanta_profiles: {}
+        };
         return defaults[key] || null;
       }
       return JSON.parse(localStorage.getItem(key));
@@ -188,8 +198,10 @@ class FantaApp {
     localStorage.setItem('fanta_active_user', username);
     this.currentUser = this.getActiveUser();
     this.loadUserBuilderState();
+    this.applyUserPalette(username);
     this.render();
     this.showToast(`Accesso effettuato come ${this.currentUser.username} (${this.currentUser.role === 'master' ? '👑 Master' : 'Allenatore'})`, 'info');
+    setTimeout(() => this.checkAndShowNewNotices(), 400);
   }
 
   logout() {
@@ -240,41 +252,95 @@ class FantaApp {
     this.showToast("🔒 Portale bloccato con successo.", "info");
   }
 
-  // --- COUNTDOWN LOGIC ---
-  startCountdown() {
-    const target = new Date(SQUAD_DEADLINE).getTime();
-    const update = () => {
-      const now = new Date().getTime();
-      const diff = target - now;
+  // --- HTML ESCAPING ---
+  escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
 
-      const daysEl = document.getElementById('countDays');
-      const hoursEl = document.getElementById('countHours');
-      const minsEl = document.getElementById('countMins');
-      const secsEl = document.getElementById('countSecs');
+  // --- NOTIFICHE PUSH FLOTTANTI & TRACKING LETTI ---
+  getSeenNoticeIds() {
+    const userKey = this.currentUser ? this.currentUser.username : 'guest';
+    try {
+      return JSON.parse(localStorage.getItem(`fanta_seen_notices_${userKey}`)) || [];
+    } catch {
+      return [];
+    }
+  }
 
-      if (!daysEl || !hoursEl || !minsEl || !secsEl) return;
+  markAllNoticesAsSeen() {
+    const userKey = this.currentUser ? this.currentUser.username : 'guest';
+    const notices = this.getData('fanta_notices') || [];
+    const allIds = notices.map(n => n.id);
+    localStorage.setItem(`fanta_seen_notices_${userKey}`, JSON.stringify(allIds));
+    const card = document.getElementById('pushNotifCard');
+    if (card) {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      card.style.transition = 'all 0.3s ease';
+      setTimeout(() => card.remove(), 300);
+    }
+  }
 
-      if (diff <= 0) {
-        daysEl.innerText = "00";
-        hoursEl.innerText = "00";
-        minsEl.innerText = "00";
-        secsEl.innerText = "00";
+  checkAndShowNewNotices() {
+    if (!this.currentUser) return;
+
+    // Se l'utente si trova già nella scheda Home, sta già visualizzando gli avvisi direttamente:
+    // contrassegniamo tutti gli avvisi come visti e non mostriamo il pop-up.
+    if (this.currentTab === 'home') {
+      this.markAllNoticesAsSeen();
+      return;
+    }
+
+    const notices = this.getData('fanta_notices') || [];
+    const seen = this.getSeenNoticeIds();
+    const unread = notices.filter(n => !seen.includes(n.id));
+
+    if (unread.length > 0) {
+      this.showPushNotificationCard(unread[0], unread.length);
+    } else {
+      const old = document.getElementById('pushNotifCard');
+      if (old) old.remove();
+    }
+  }
+
+  showPushNotificationCard(notice, totalUnread = 1) {
+    const old = document.getElementById('pushNotifCard');
+    if (old) old.remove();
+
+    const card = document.createElement('div');
+    card.id = 'pushNotifCard';
+    card.className = 'push-notif-card';
+    card.onclick = (e) => {
+      // Se clicca sul pulsante chiudi, segna come letto e chiude senza cambiare tab
+      if (e.target.closest('.push-notif-close')) {
+        this.markAllNoticesAsSeen();
         return;
       }
-
-      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-      const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      const secs = Math.floor((diff % (1000 * 60)) / 1000);
-
-      daysEl.innerText = String(days).padStart(2, '0');
-      hoursEl.innerText = String(hours).padStart(2, '0');
-      minsEl.innerText = String(mins).padStart(2, '0');
-      secsEl.innerText = String(secs).padStart(2, '0');
+      this.switchTab('home');
+      this.markAllNoticesAsSeen();
     };
 
-    update();
-    setInterval(update, 1000);
+    const countBadge = totalUnread > 1 ? `<span class="push-notif-counter">${totalUnread} nuovi</span>` : '';
+
+    card.innerHTML = `
+      <div class="push-notif-icon-col">📢</div>
+      <div class="push-notif-content-col">
+        <div class="push-notif-title-row">
+          <strong>Ci sono nuovi avvisi nella Home</strong>
+          ${countBadge}
+        </div>
+        <div class="push-notif-sub">Tocca qui per visualizzarli</div>
+      </div>
+      <button type="button" class="push-notif-close" title="Chiudi e segna come letto">✕</button>
+    `;
+
+    document.body.appendChild(card);
   }
 
   // --- INITIALIZE DOM & EVENTS ---
@@ -344,7 +410,11 @@ class FantaApp {
     const userBadgeBtn = document.getElementById('userBadgeBtn');
     if (userBadgeBtn) {
       userBadgeBtn.addEventListener('click', () => {
-        this.openModal('loginModal');
+        if (this.currentUser) {
+          this.openProfileModal();
+        } else {
+          this.openModal('loginModal');
+        }
       });
     }
 
@@ -360,6 +430,7 @@ class FantaApp {
     this.setupNoticeForm();
     this.setupTipForm();
     this.setupManualPointsForm();
+    this.setupMasterDirectEventForm();
 
     this.loadUserBuilderState();
   }
@@ -414,6 +485,12 @@ class FantaApp {
 
     this.currentTab = tabName;
     this.playSound('click');
+
+    if (tabName === 'home') {
+      this.markAllNoticesAsSeen();
+    } else {
+      setTimeout(() => this.checkAndShowNewNotices(), 300);
+    }
 
     document.querySelectorAll('[data-tab]').forEach(el => {
       if (el.getAttribute('data-tab') === tabName) {
@@ -480,7 +557,7 @@ class FantaApp {
 
     if (!this.currentUser) {
       if (nameEl) nameEl.innerText = "Accedi";
-      if (avatarEl) avatarEl.innerText = "👤";
+      if (avatarEl) avatarEl.innerHTML = "👤";
       if (roleEl) {
         roleEl.innerText = "Non Connesso";
         roleEl.className = "user-badge-role";
@@ -491,7 +568,7 @@ class FantaApp {
 
     if (logoutBtn) logoutBtn.style.display = 'inline-flex';
     if (nameEl) nameEl.innerText = this.currentUser.username;
-    if (avatarEl) avatarEl.innerText = this.currentUser.avatar;
+    if (avatarEl) avatarEl.innerHTML = this.getUserAvatarHtml(this.currentUser.username, '26px', '1.2rem');
     if (roleEl) {
       if (this.currentUser.role === 'master') {
         roleEl.innerText = "👑 Master / Admin";
@@ -575,8 +652,10 @@ class FantaApp {
 
     const statTeamsEl = document.getElementById('statConfirmedTeams');
     const statApprovedEl = document.getElementById('statApprovedEvents');
-    if (statTeamsEl) statTeamsEl.innerText = `${confirmedCount} / 12`;
+    if (statTeamsEl) statTeamsEl.innerText = `${confirmedCount} / 11`;
     if (statApprovedEl) statApprovedEl.innerText = approvedReports;
+
+    this.renderUserProfile('userProfilePanel');
   }
 
   // --- SECTION: BUILDER & SQUADRA MERCATO ---
@@ -895,9 +974,10 @@ class FantaApp {
     myTeam.collega = this.selectedCollega;
     myTeam.cfaSpesi = spent;
 
+    myTeam.puntiBase = 0;
+
     // Trigger automatici
     if (selectedCollegaObj.nome === "Kiril" || selectedCollegaObj.nome === "Nicole") {
-      myTeam.puntiBase += 20;
       myTeam.puntiStorico.push({
         data: new Date().toLocaleDateString('it-IT'),
         motivo: `🎖️ Bonus Coraggio: Schierato ${selectedCollegaObj.nome}`,
@@ -907,7 +987,6 @@ class FantaApp {
     }
 
     if (selectedCollegaObj.nome === "Martina") {
-      myTeam.puntiBase += 100;
       myTeam.puntiStorico.push({
         data: new Date().toLocaleDateString('it-IT'),
         motivo: `👑 Mascotte Martina: +100 pt automatici e sblocco Soffiate dal Master`,
@@ -1258,7 +1337,7 @@ class FantaApp {
           </td>
           <td>
             <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="font-size: 1.3rem;">${item.avatar}</span>
+              ${this.getUserAvatarHtml(item.username, '28px', '1.3rem')}
               <div>
                 <strong style="color: #fff;">${item.username}</strong>
                 ${item.role === 'master' ? '<span class="user-badge-role role-master" style="margin-left: 6px;">MASTER</span>' : ''}
@@ -1324,7 +1403,7 @@ class FantaApp {
 
     modalBody.innerHTML = `
       <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 20px;">
-        <span style="font-size: 3rem;">${user.avatar}</span>
+        ${this.getUserAvatarHtml(user.username, '64px', '3rem')}
         <div>
           <h2 style="color: #fff; font-size: 1.4rem;">Squadra di ${user.username}</h2>
           <p style="color: var(--text-muted); font-size: 0.85rem;">${user.bio}</p>
@@ -1399,7 +1478,7 @@ class FantaApp {
         <div class="report-card">
           <div class="report-header">
             <div class="report-author-box">
-              <span style="font-size: 1.4rem;">📷</span>
+              ${this.getUserAvatarHtml(r.autore, '32px', '1.4rem')}
               <div>
                 <strong style="color: #fff; font-size: 0.95rem;">${r.autore}</strong>
                 <div style="font-size: 0.75rem; color: var(--text-dark);">${r.data}</div>
@@ -1408,15 +1487,15 @@ class FantaApp {
             <div>${statusBadge}</div>
           </div>
 
-          <h3 class="report-title">${r.titolo}</h3>
-          <p class="report-desc">${r.descrizione}</p>
+          <h3 class="report-title">${this.escapeHtml(r.titolo)}</h3>
+          <p class="report-desc">${this.escapeHtml(r.descrizione)}</p>
 
           <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
             <span class="char-tiny-pill" style="background: rgba(6, 182, 212, 0.15); border-color: rgba(6, 182, 212, 0.4); color: #67e8f9;">
-              🎯 Personaggio: ${r.personaggioNome}
+              🎯 Personaggi: ${this.escapeHtml(r.personaggiNomi || r.personaggioNome)}
             </span>
             <span class="char-tiny-pill" style="background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: #fbbf24;">
-              🏆 Categoria: ${r.categoria}
+              🏆 Categoria: ${this.escapeHtml(r.categoria)}
             </span>
             <span class="char-tiny-pill" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #34d399;">
               ${r.punti >= 0 ? '+' + r.punti : r.punti} pt
@@ -1440,9 +1519,58 @@ class FantaApp {
               ID: #${r.id}
             </div>
           </div>
+
+          <!-- SEZIONE COMMENTI & PROPOSTE PUNTEGGI -->
+          <div class="report-comments-section">
+            <div class="comments-list" id="comments-${r.id}">
+              ${(r.commenti || []).map(c => `
+                <div class="comment-item">
+                  <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                    <span class="comment-author">${this.getUserAvatarHtml(c.autore, '16px', '0.85rem')} ${this.escapeHtml(c.autore)}</span>
+                    <span class="comment-date">${c.data}</span>
+                  </div>
+                  <div class="comment-text">${this.escapeHtml(c.testo)}</div>
+                </div>
+              `).join('')}
+              ${(!r.commenti || r.commenti.length === 0) ? '<p class="no-comments">Nessun commento ancora. Sii il primo a commentare o proporre un punteggio diverso!</p>' : ''}
+            </div>
+            <div class="comment-input-row">
+              <input type="text" class="comment-input" id="commentInput-${r.id}" placeholder="Scrivi un commento o proponi un punteggio..." maxlength="200" onkeypress="if(event.key==='Enter') app.addComment('${r.id}')">
+              <button class="btn-comment-send" onclick="app.addComment('${r.id}')" type="button">💬 Invia</button>
+            </div>
+          </div>
         </div>
       `;
     }).join('');
+  }
+
+  addComment(reportId) {
+    if (!this.currentUser) {
+      this.showToast("Accedi per inviare commenti!", "danger");
+      return;
+    }
+    const input = document.getElementById(`commentInput-${reportId}`);
+    if (!input) return;
+    const testo = input.value.trim();
+    if (!testo) return;
+
+    const reports = this.getData('fanta_reports') || [];
+    const rep = reports.find(r => r.id === reportId);
+    if (!rep) return;
+
+    if (!Array.isArray(rep.commenti)) rep.commenti = [];
+    rep.commenti.push({
+      id: 'c-' + Date.now(),
+      autore: this.currentUser.username,
+      testo,
+      data: new Date().toLocaleDateString('it-IT') + ' ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+    });
+
+    this.saveData('fanta_reports', reports);
+    input.value = '';
+    this.playSound('coin');
+    this.showToast("💬 Commento pubblicato!", "info");
+    this.renderSocialFeed();
   }
 
   voteReport(reportId, voteVal) {
@@ -1491,7 +1619,7 @@ class FantaApp {
               <div>
                 <strong style="color: #fff; font-size: 1.05rem;">${r.titolo}</strong>
                 <div style="font-size: 0.78rem; color: var(--text-muted);">
-                  Inviata da <strong>${r.autore}</strong> il ${r.data} • Personaggio: <strong>${r.personaggioNome}</strong>
+                  Inviata da <strong>${r.autore}</strong> il ${r.data} • Personaggio/i: <strong>${r.personaggiNomi || r.personaggioNome}</strong>
                 </div>
               </div>
               <span class="cost-tag" style="color: #34d399; border-color: #34d399;">
@@ -1500,6 +1628,14 @@ class FantaApp {
             </div>
             <p style="color: var(--text-muted); font-size: 0.88rem; margin-bottom: 12px;">${r.descrizione}</p>
             ${r.foto ? `<img src="${r.foto}" style="max-height: 180px; border-radius: 8px; margin-bottom: 12px;" />` : ''}
+
+            <!-- Modifica Punti Master -->
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px; background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 8px;">
+              <label style="color: #fbbf24; font-size: 0.82rem; font-weight: 700; white-space: nowrap;">✏️ Modifica Punti Master:</label>
+              <input type="number" id="masterPtEdit-${r.id}" value="${r.punti}" class="form-control" style="width: 100px; padding: 6px 10px; font-weight: 700;">
+              <span style="font-size: 0.75rem; color: var(--text-muted);">(Sovrascrive i pt proposti prima di approvare)</span>
+            </div>
+
             <div class="master-action-row">
               <button class="btn-master-approve" onclick="app.approveReport('${r.id}')">
                 ✓ Approva e Assegna Punti Automatici
@@ -1714,8 +1850,22 @@ class FantaApp {
     const rep = reports.find(r => r.id === reportId);
     if (!rep) return;
 
+    // Lettura eventuale punteggio modificato dal Master
+    const editInput = document.getElementById(`masterPtEdit-${reportId}`);
+    if (editInput) {
+      const parsed = parseInt(editInput.value, 10);
+      if (!isNaN(parsed)) {
+        rep.punti = parsed;
+      }
+    }
+
     rep.stato = 'approvata';
     this.saveData('fanta_reports', reports);
+
+    // Supporto sia singolo personaggio che multi-personaggi
+    const targetCharIds = Array.isArray(rep.personaggiIds) && rep.personaggiIds.length > 0
+      ? rep.personaggiIds
+      : [rep.personaggioId].filter(Boolean);
 
     const teams = this.getData('fanta_teams') || {};
     const impactedCoaches = [];
@@ -1723,14 +1873,15 @@ class FantaApp {
     Object.entries(teams).forEach(([coachName, team]) => {
       if (!team.confirmed) return;
 
-      const hasInDocenti = (team.docenti || []).includes(rep.personaggioId);
-      const hasInCollega = (team.collega === rep.personaggioId);
+      const hasChar = targetCharIds.some(charId => 
+        (team.docenti || []).includes(charId) || team.collega === charId
+      );
 
-      if (hasInDocenti || hasInCollega) {
+      if (hasChar) {
         if (!team.puntiStorico) team.puntiStorico = [];
         team.puntiStorico.push({
           data: new Date().toLocaleDateString('it-IT'),
-          motivo: `${rep.personaggioNome}: ${rep.categoria} (Approvata dal Master)`,
+          motivo: `${rep.personaggiNomi || rep.personaggioNome}: ${rep.titolo} (Approvata dal Master)`,
           pt: rep.punti
         });
         impactedCoaches.push(coachName);
@@ -1738,6 +1889,20 @@ class FantaApp {
     });
 
     this.saveData('fanta_teams', teams);
+
+    // Auto-pubblicazione avviso ufficiale in Home
+    const notices = this.getData('fanta_notices') || [];
+    notices.unshift({
+      id: 'notice-approved-' + Date.now(),
+      tipo: 'RISULTATO SEGNALAZIONE',
+      icona: '✅',
+      badge: 'Approvata',
+      titolo: `✅ Segnalazione Approvata: ${rep.personaggiNomi || rep.personaggioNome}`,
+      data: new Date().toLocaleDateString('it-IT'),
+      testo: `Il Master ha approvato: "${rep.titolo}" (${rep.punti >= 0 ? '+' : ''}${rep.punti} pt). Punti accreditati alle squadre con: ${rep.personaggiNomi || rep.personaggioNome}.`
+    });
+    this.saveData('fanta_notices', notices);
+
     this.playSound('success');
     this.showToast(`✅ Segnalazione approvata! Punti accreditati a: ${impactedCoaches.length > 0 ? impactedCoaches.join(', ') : 'Nessuna squadra ha questo personaggio'}`, 'success');
 
@@ -1753,6 +1918,19 @@ class FantaApp {
 
     rep.stato = 'rifiutata';
     this.saveData('fanta_reports', reports);
+
+    // Auto-pubblicazione avviso ufficiale in Home
+    const notices = this.getData('fanta_notices') || [];
+    notices.unshift({
+      id: 'notice-rejected-' + Date.now(),
+      tipo: 'RISULTATO SEGNALAZIONE',
+      icona: '❌',
+      badge: 'Non Convalidata',
+      titolo: `❌ Segnalazione Non Convalidata: ${rep.personaggiNomi || rep.personaggioNome}`,
+      data: new Date().toLocaleDateString('it-IT'),
+      testo: `Il Master ha esaminato e non convalidato: "${rep.titolo}". Nessun punto assegnato.`
+    });
+    this.saveData('fanta_notices', notices);
 
     this.playSound('click');
     this.showToast(`Segnalazione #${reportId} rifiutata.`, 'info');
@@ -1783,6 +1961,50 @@ class FantaApp {
     }
   }
 
+  // --- MULTI-CHARACTER PICKER (SEGNALAZIONI) ---
+  renderReportCharPicker() {
+    const container = document.getElementById('reportCharPickerMulti');
+    const hiddenInput = document.getElementById('reportSelectedCharsHidden');
+    if (!container) return;
+
+    if (!Array.isArray(this._selectedReportCharIds)) {
+      this._selectedReportCharIds = [];
+    }
+
+    const allChars = [
+      ...DOCENTI.map(d => ({ ...d, tipo: 'Docente' })),
+      ...COLLEGHI.map(c => ({ ...c, tipo: 'Collega' }))
+    ];
+
+    container.innerHTML = allChars.map(c => {
+      const isSelected = this._selectedReportCharIds.includes(c.id);
+      return `
+        <button type="button" class="char-chip-pill ${isSelected ? 'active' : ''}" onclick="app.toggleReportChar('${c.id}')">
+          <span>${c.avatar}</span>
+          <span>${c.nome}</span>
+          <span class="chip-check">✓</span>
+        </button>
+      `;
+    }).join('');
+
+    if (hiddenInput) {
+      hiddenInput.value = this._selectedReportCharIds.join(',');
+    }
+  }
+
+  toggleReportChar(charId) {
+    if (!Array.isArray(this._selectedReportCharIds)) {
+      this._selectedReportCharIds = [];
+    }
+    const idx = this._selectedReportCharIds.indexOf(charId);
+    if (idx >= 0) {
+      this._selectedReportCharIds.splice(idx, 1);
+    } else {
+      this._selectedReportCharIds.push(charId);
+    }
+    this.renderReportCharPicker();
+  }
+
   setupReportForm() {
     const btnOpen = document.getElementById('btnOpenNewReportModal');
     if (btnOpen) {
@@ -1791,44 +2013,33 @@ class FantaApp {
           this.showToast("🔒 Devi prima confermare la tua Squadra per inviare segnalazioni!", "danger");
           return;
         }
+        this._selectedReportCharIds = [];
+        this.renderReportCharPicker();
         this.openModal('newReportModal');
       });
-    }
-
-    const selChar = document.getElementById('reportPersonaggioSelect');
-    if (selChar) {
-      let optHtml = '<option value="">-- Seleziona Personaggio Coinvolto --</option>';
-      optHtml += '<optgroup label="Docenti">';
-      DOCENTI.forEach(d => {
-        optHtml += `<option value="${d.id}" data-name="${d.nome}" data-type="docente">${d.avatar} ${d.nome} (${d.costoCFA} CFA)</option>`;
-      });
-      optHtml += '</optgroup><optgroup label="Colleghi">';
-      COLLEGHI.forEach(c => {
-        optHtml += `<option value="${c.id}" data-name="${c.nome}" data-type="collega">${c.avatar} ${c.nome} (${c.costoCFA} CFA)</option>`;
-      });
-      optHtml += '</optgroup>';
-      selChar.innerHTML = optHtml;
     }
 
     const selEvent = document.getElementById('reportEventoSelect');
     if (selEvent) {
       let evHtml = '<option value="" data-pts="0">-- Seleziona Evento da Regolamento (oppure scrivi sotto) --</option>';
-      evHtml += '<optgroup label="Attività & Lezioni">';
-      EVENTI_CATALOGO.attivita.forEach(e => {
-        evHtml += `<option value="${e.nome}" data-pts="${e.pt}">[+${e.pt}pt] ${e.nome}</option>`;
-      });
-      evHtml += '</optgroup><optgroup label="Vita da Campus">';
-      EVENTI_CATALOGO.campus.forEach(e => {
-        evHtml += `<option value="${e.nome}" data-pts="${e.pt}">[${e.pt > 0 ? '+' : ''}${e.pt}pt] ${e.nome}</option>`;
-      });
-      evHtml += '</optgroup>';
+      optHtmlGroup: {
+        evHtml += '<optgroup label="Attività & Lezioni">';
+        EVENTI_CATALOGO.attivita.forEach(e => {
+          evHtml += `<option value="${e.nome}" data-pts="${e.pt}">[+${e.pt}pt] ${e.nome}</option>`;
+        });
+        evHtml += '</optgroup><optgroup label="Vita da Campus">';
+        EVENTI_CATALOGO.campus.forEach(e => {
+          evHtml += `<option value="${e.nome}" data-pts="${e.pt}">[${e.pt > 0 ? '+' : ''}${e.pt}pt] ${e.nome}</option>`;
+        });
+        evHtml += '</optgroup>';
+      }
       selEvent.innerHTML = evHtml;
 
       selEvent.addEventListener('change', () => {
         const selectedOpt = selEvent.options[selEvent.selectedIndex];
         const pts = selectedOpt.getAttribute('data-pts');
         const ptsInput = document.getElementById('reportPuntiInput');
-        if (ptsInput && pts) ptsInput.value = pts;
+        if (ptsInput && pts && pts !== '0') ptsInput.value = pts;
       });
     }
 
@@ -1838,26 +2049,35 @@ class FantaApp {
         e.preventDefault();
         const titolo = document.getElementById('reportTitoloInput').value.trim();
         const desc = document.getElementById('reportDescInput').value.trim();
-        const selPersonaggio = document.getElementById('reportPersonaggioSelect');
-        const persId = selPersonaggio.value;
-        const persNome = selPersonaggio.options[selPersonaggio.selectedIndex]?.getAttribute('data-name') || 'Generale';
         const catSelect = document.getElementById('reportEventoSelect');
         const catVal = catSelect.value || document.getElementById('reportCustomCatInput').value.trim() || 'Evento Straordinario';
         const punti = parseInt(document.getElementById('reportPuntiInput').value, 10) || 20;
         const fotoUrl = document.getElementById('reportFotoUrlInput').value.trim();
 
-        if (!titolo || !desc || !persId) {
+        if (!this._selectedReportCharIds || this._selectedReportCharIds.length === 0) {
+          this.showToast("⚠️ Seleziona almeno un personaggio coinvolto!", "danger");
+          return;
+        }
+
+        if (!titolo || !desc) {
           this.showToast("⚠️ Compila tutti i campi obbligatori!", "danger");
           return;
         }
+
+        const allChars = [...DOCENTI, ...COLLEGHI];
+        const selectedObjs = this._selectedReportCharIds.map(id => allChars.find(c => c.id === id)).filter(Boolean);
+        const joinedNames = selectedObjs.map(c => c.nome).join(', ');
+        const firstId = this._selectedReportCharIds[0];
 
         const reports = this.getData('fanta_reports') || [];
         const newRep = {
           id: 'rep-' + Date.now(),
           titolo,
           descrizione: desc,
-          personaggioId: persId,
-          personaggioNome: persNome,
+          personaggioId: firstId,
+          personaggioNome: joinedNames,
+          personaggiIds: [...this._selectedReportCharIds],
+          personaggiNomi: joinedNames,
           categoria: catVal,
           punti,
           autore: this.currentUser.username,
@@ -1866,7 +2086,8 @@ class FantaApp {
           stato: 'in_attesa',
           upvotes: 1,
           downvotes: 0,
-          voters: { [this.currentUser.username]: 1 }
+          voters: { [this.currentUser.username]: 1 },
+          commenti: []
         };
 
         reports.unshift(newRep);
@@ -1875,8 +2096,88 @@ class FantaApp {
         this.playSound('success');
         this.closeAllModals();
         form.reset();
+        this._selectedReportCharIds = [];
         this.showToast("🚀 Segnalazione inviata con successo! In attesa di approvazione Master.", "success");
         this.switchTab('social');
+      });
+    }
+  }
+
+  // --- MASTER DIRECT EVENT HANDLER ---
+  setupMasterDirectEventForm() {
+    const selChar = document.getElementById('directEventCharSelect');
+    if (selChar) {
+      let optHtml = '<option value="">-- Seleziona Personaggio Coinvolto --</option>';
+      optHtml += '<optgroup label="Docenti">';
+      DOCENTI.forEach(d => {
+        optHtml += `<option value="${d.id}">${d.avatar} ${d.nome} (${d.costoCFA} CFA)</option>`;
+      });
+      optHtml += '</optgroup><optgroup label="Colleghi">';
+      COLLEGHI.forEach(c => {
+        optHtml += `<option value="${c.id}">${c.avatar} ${c.nome} (${c.costoCFA} CFA)</option>`;
+      });
+      optHtml += '</optgroup>';
+      selChar.innerHTML = optHtml;
+    }
+
+    const form = document.getElementById('formMasterDirectEvent');
+    if (form) {
+      form.addEventListener('submit', (e) => {
+        e.preventDefault();
+        if (!this.currentUser || this.currentUser.role !== 'master') return;
+
+        const charId = document.getElementById('directEventCharSelect').value;
+        const titolo = document.getElementById('directEventTitleInput').value.trim();
+        const punti = parseInt(document.getElementById('directEventPointsInput').value, 10);
+        const desc = document.getElementById('directEventDescInput').value.trim();
+
+        if (!charId || !titolo || isNaN(punti) || !desc) {
+          this.showToast("⚠️ Compila tutti i campi obbligatori!", "danger");
+          return;
+        }
+
+        const allChars = [...DOCENTI, ...COLLEGHI];
+        const charObj = allChars.find(c => c.id === charId);
+        if (!charObj) return;
+
+        const teams = this.getData('fanta_teams') || {};
+        const impactedCoaches = [];
+
+        Object.entries(teams).forEach(([coachName, team]) => {
+          if (!team.confirmed) return;
+          const hasInDocenti = (team.docenti || []).includes(charId);
+          const hasInCollega = (team.collega === charId);
+
+          if (hasInDocenti || hasInCollega) {
+            if (!team.puntiStorico) team.puntiStorico = [];
+            team.puntiStorico.push({
+              data: new Date().toLocaleDateString('it-IT'),
+              motivo: `⚡ [Master] ${charObj.nome}: ${titolo}`,
+              pt: punti
+            });
+            impactedCoaches.push(coachName);
+          }
+        });
+
+        this.saveData('fanta_teams', teams);
+
+        // Pubblica automaticamente avviso in Home (senza passare dalla bacheca)
+        const notices = this.getData('fanta_notices') || [];
+        notices.unshift({
+          id: 'notice-direct-' + Date.now(),
+          tipo: punti >= 0 ? 'IMPREVISTO SETTIMANALE' : 'MALUS UFFICIALE',
+          icona: punti >= 0 ? '⚡' : '💥',
+          badge: punti >= 0 ? `+${punti} pt` : `${punti} pt`,
+          titolo: `⚡ ${titolo} (${charObj.nome})`,
+          data: new Date().toLocaleDateString('it-IT'),
+          testo: `${desc} — ${punti >= 0 ? '+' : ''}${punti} pt accreditati a tutte le squadre che schierano ${charObj.nome}.`
+        });
+        this.saveData('fanta_notices', notices);
+
+        this.playSound(punti >= 0 ? 'success' : 'glitch');
+        form.reset();
+        this.showToast(`⚡ Evento Master pubblicato! Punti (${punti >= 0 ? '+' : ''}${punti} pt) assegnati a: ${impactedCoaches.length > 0 ? impactedCoaches.join(', ') : 'Nessuna squadra'} e pubblicato in Home!`, 'success');
+        this.render();
       });
     }
   }
@@ -1980,6 +2281,221 @@ class FantaApp {
         this.render();
       });
     }
+  }
+
+  // --- USER PROFILE & GRAPHIC CUSTOMIZATION ---
+  getUserProfile(username) {
+    const profiles = this.getData('fanta_profiles') || {};
+    return profiles[username] || {};
+  }
+
+  saveUserProfile(partial) {
+    if (!this.currentUser) return;
+    const profiles = this.getData('fanta_profiles') || {};
+    const cur = profiles[this.currentUser.username] || {};
+    profiles[this.currentUser.username] = { ...cur, ...partial };
+    this.saveData('fanta_profiles', profiles);
+  }
+
+  getUserAvatarHtml(username, size = '28px', fontSize = '1.3rem') {
+    const prof = this.getUserProfile(username);
+    const users = this.getData('fanta_users') || INITIAL_USERS;
+    const u = users.find(x => x.username === username);
+    const defaultAvatar = u?.avatar || '👤';
+
+    if (prof.avatarPhoto) {
+      return `<img src="${prof.avatarPhoto}" alt="${this.escapeHtml(username)}" style="width:${size};height:${size};border-radius:50%;object-fit:cover;vertical-align:middle;display:inline-block;border:1.5px solid var(--primary);box-shadow:0 0 6px var(--primary-glow);" />`;
+    }
+
+    const emoji = prof.avatarEmoji || defaultAvatar;
+    return `<span style="font-size:${fontSize};vertical-align:middle;display:inline-flex;align-items:center;justify-content:center;line-height:1;">${emoji}</span>`;
+  }
+
+  applyUserPalette(username) {
+    const prof = this.getUserProfile(username);
+    const paletteId = prof.paletteId || 'default';
+    const palettes = typeof COLOR_PALETTES !== 'undefined' ? COLOR_PALETTES : [];
+    const p = palettes.find(x => x.id === paletteId || (paletteId === 'viola' && x.id === 'default')) || palettes[0];
+    if (!p || !p.vars) return;
+
+    const root = document.documentElement;
+    Object.entries(p.vars).forEach(([k, v]) => {
+      root.style.setProperty(k, v);
+    });
+  }
+
+  setUserPalette(paletteId) {
+    this.saveUserProfile({ paletteId });
+    this.applyUserPalette(this.currentUser.username);
+    this.renderUserProfile('userProfilePanel');
+    const modalBody = document.getElementById('profileModalBody');
+    if (modalBody && document.getElementById('profileModal')?.classList.contains('active')) {
+      this.renderUserProfile('profileModalBody');
+    }
+    const palettes = typeof COLOR_PALETTES !== 'undefined' ? COLOR_PALETTES : [];
+    const p = palettes.find(x => x.id === paletteId || (paletteId === 'viola' && x.id === 'default'));
+    this.showToast(`🎨 Tema "${p?.nome || paletteId}" applicato con successo!`, 'success');
+  }
+
+  setProfileEmoji(emoji) {
+    this.saveUserProfile({ avatarEmoji: emoji, avatarPhoto: null });
+    this.renderHeader();
+    this.renderUserProfile('userProfilePanel');
+    const modalBody = document.getElementById('profileModalBody');
+    if (modalBody && document.getElementById('profileModal')?.classList.contains('active')) {
+      this.renderUserProfile('profileModalBody');
+    }
+    this.renderLeaderboard();
+    this.showToast(`😀 Avatar aggiornato con emoji ${emoji}!`, 'success');
+  }
+
+  handleProfilePhotoUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      this.showToast("⚠️ File troppo grande (max 5MB)", "danger");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (evt) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 140;
+        let w = img.width;
+        let h = img.height;
+        if (w > h) {
+          if (w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+        } else {
+          if (h > maxDim) { h = Math.round((w * maxDim) / h); h = maxDim; }
+        }
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+
+        this.saveUserProfile({ avatarPhoto: dataUrl, avatarEmoji: null });
+        this.renderHeader();
+        this.renderUserProfile('userProfilePanel');
+        const modalBody = document.getElementById('profileModalBody');
+        if (modalBody && document.getElementById('profileModal')?.classList.contains('active')) {
+          this.renderUserProfile('profileModalBody');
+        }
+        this.renderLeaderboard();
+        this.showToast("📷 Foto profilo salvata e sincronizzata con successo!", "success");
+      };
+      img.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  removeProfilePhoto() {
+    this.saveUserProfile({ avatarPhoto: null });
+    this.renderHeader();
+    this.renderUserProfile('userProfilePanel');
+    const modalBody = document.getElementById('profileModalBody');
+    if (modalBody && document.getElementById('profileModal')?.classList.contains('active')) {
+      this.renderUserProfile('profileModalBody');
+    }
+    this.renderLeaderboard();
+    this.showToast("Foto profilo rimossa. Ripristinato avatar standard.", "info");
+  }
+
+  openProfileModal() {
+    if (!this.currentUser) return;
+    this.renderUserProfile('profileModalBody');
+    this.openModal('profileModal');
+  }
+
+  renderUserProfile(containerId = 'userProfilePanel') {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    if (!this.currentUser) {
+      container.innerHTML = '';
+      return;
+    }
+
+    const prof = this.getUserProfile(this.currentUser.username);
+    const currentPaletteId = prof.paletteId || 'default';
+    const normalizedPaletteId = currentPaletteId === 'viola' ? 'default' : currentPaletteId;
+    const palettes = typeof COLOR_PALETTES !== 'undefined' ? COLOR_PALETTES : [];
+    const quickEmojis = ['👑', '🎨', '🎭', '🦊', '🐱', '☕', '🍷', '⚽', '🚀', '💎', '🌸', '⚡', '🕶️', '🎀', '📚'];
+
+    const avatarPreviewHtml = prof.avatarPhoto
+      ? `<img src="${prof.avatarPhoto}" alt="Avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`
+      : `<span style="font-size:2.8rem;">${prof.avatarEmoji || this.currentUser.avatar || '👤'}</span>`;
+
+    container.innerHTML = `
+      <div class="profile-panel-card">
+        <h3 style="color:#fff;font-size:1.2rem;margin-bottom:6px;display:flex;align-items:center;gap:8px;">
+          <span>👤</span> Profilo & Personalizzazione Grafica
+        </h3>
+        <p style="color:var(--text-muted);font-size:0.86rem;margin-bottom:18px;">
+          Personalizza il tuo avatar (carica una foto o scegli un'emoji) e seleziona il colore della tua interfaccia.
+        </p>
+
+        <!-- Avatar Row -->
+        <div class="profile-avatar-row">
+          <div class="profile-avatar-display">
+            ${avatarPreviewHtml}
+          </div>
+          <div style="flex:1;min-width:200px;">
+            <div style="font-weight:700;color:#fff;font-size:1rem;margin-bottom:4px;">
+              ${this.escapeHtml(this.currentUser.username)}
+              <span class="user-badge-role ${this.currentUser.role === 'master' ? 'role-master' : 'role-coach'}" style="margin-left:6px;">
+                ${this.currentUser.role === 'master' ? '👑 Master' : 'Allenatore'}
+              </span>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px;">
+              <label class="btn-upload-file">
+                📷 Carica Foto Profilo
+                <input type="file" accept="image/*" style="display:none;" onchange="app.handleProfilePhotoUpload(event)">
+              </label>
+              ${prof.avatarPhoto ? `
+                <button type="button" class="btn-recruit" style="padding:7px 12px;font-size:0.8rem;border-color:rgba(239,68,68,0.5);color:#fca5a5;" onclick="app.removeProfilePhoto()">
+                  ✕ Rimuovi Foto
+                </button>
+              ` : ''}
+            </div>
+
+            <!-- Quick Emojis -->
+            <div style="margin-top:12px;">
+              <span style="font-size:0.75rem;color:var(--text-dark);text-transform:uppercase;font-weight:700;">Oppure scegli un'emoji rapida:</span>
+              <div class="emoji-quick-grid">
+                ${quickEmojis.map(em => `
+                  <button type="button" class="emoji-quick-btn" onclick="app.setProfileEmoji('${em}')" title="${em}">
+                    ${em}
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Palette Theme Row -->
+        <div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;margin-top:10px;">
+          <label class="form-label" style="font-weight:700;color:#fff;">🎨 Tavolozza Colori Tema Personale</label>
+          <div class="palette-grid">
+            ${palettes.map(p => {
+              const isActive = p.id === normalizedPaletteId;
+              const primaryColor = p.vars['--primary'] || '#8b5cf6';
+              return `
+                <button type="button" class="palette-card-btn ${isActive ? 'active' : ''}" onclick="app.setUserPalette('${p.id}')" style="border-color:${isActive ? primaryColor : 'rgba(255,255,255,0.1)'}">
+                  <span class="palette-color-preview" style="background:${primaryColor};"></span>
+                  <div style="display:flex;align-items:center;gap:4px;font-size:0.88rem;font-weight:700;">
+                    <span>${p.emoji}</span>
+                    <span>${this.escapeHtml(p.nome)}</span>
+                  </div>
+                  ${isActive ? '<span style="font-size:0.7rem;color:#34d399;font-weight:800;">● ATTIVO</span>' : ''}
+                </button>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </div>
+    `;
   }
 }
 
