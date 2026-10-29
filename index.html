@@ -39,6 +39,39 @@
   </div>
 
   <!-- ============================================================
+       DECORAZIONI HALLOWEEN (Ragnatele, Pipistrelli e Zucche - Non interattive)
+       ============================================================ -->
+  <div class="halloween-decorations" aria-hidden="true">
+    <div class="halloween-web web-top-left">
+      <svg viewBox="0 0 100 100" class="web-svg">
+        <path d="M0,0 L100,0 C70,10 40,40 0,100 Z" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.2"/>
+        <path d="M0,0 L75,0 C52,15 28,45 0,75 Z" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>
+        <path d="M0,0 L50,0 C35,20 18,40 0,50 Z" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
+        <line x1="0" y1="0" x2="100" y2="0" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+        <line x1="0" y1="0" x2="0" y2="100" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+        <line x1="0" y1="0" x2="70" y2="70" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+        <line x1="0" y1="0" x2="90" y2="35" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>
+        <line x1="0" y1="0" x2="35" y2="90" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>
+      </svg>
+      <div class="halloween-spider">🕷️</div>
+    </div>
+    <div class="halloween-web web-top-right">
+      <svg viewBox="0 0 100 100" class="web-svg">
+        <path d="M100,0 L0,0 C30,10 60,40 100,100 Z" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.2"/>
+        <path d="M100,0 L25,0 C48,15 72,45 100,75 Z" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>
+        <line x1="100" y1="0" x2="0" y2="0" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+        <line x1="100" y1="0" x2="100" y2="100" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+        <line x1="100" y1="0" x2="30" y2="70" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
+      </svg>
+    </div>
+    <div class="halloween-bat bat-1">🦇</div>
+    <div class="halloween-bat bat-2">🦇</div>
+    <div class="halloween-bat bat-3">🦇</div>
+    <div class="halloween-pumpkin-ambient pumpkin-left">🎃</div>
+    <div class="halloween-pumpkin-ambient pumpkin-right">🎃</div>
+  </div>
+
+  <!-- ============================================================
        TOP HEADER
        ============================================================ -->
   <header class="app-header">
@@ -80,6 +113,10 @@
     <button class="nav-tab-btn" data-tab="classifica">
       <span>🏆 Classifica Live</span>
     </button>
+    <button class="nav-tab-btn" data-tab="evento">
+      <span>🎃 Evento</span>
+      <span class="nav-badge-pill" style="background: rgba(249, 115, 22, 0.25); border-color: rgba(249, 115, 22, 0.6); color: #fb923c;">30-31 Ott</span>
+    </button>
     <button class="nav-tab-btn" data-tab="personaggi">
       <span>👥 Personaggi & CFA</span>
     </button>
@@ -104,15 +141,15 @@
   </nav>
 
   <!-- ============================================================
-       SEASON BANNER (ISCRIZIONI CHIUSE — STAGIONE IN CORSO)
+       SEASON BANNER (EVENTO HALLOWEEN — 30 E 31 OTTOBRE 2026)
        ============================================================ -->
-  <div class="season-active-banner">
+  <div class="season-active-banner halloween-banner-theme">
     <div class="season-banner-inner">
-      <span class="season-banner-icon">🏛️</span>
+      <span class="season-banner-icon">🎃</span>
       <span class="season-banner-text">
-        <strong>Iscrizioni chiuse</strong> — Edizione Primo Semestre 2026 in corso
+        <strong>Evento Halloween</strong> — 30 e 31 Ottobre 2026
       </span>
-      <span class="season-banner-badge">🏆 LIVE</span>
+      <span class="season-banner-badge" style="background: rgba(249, 115, 22, 0.25); border-color: rgba(249, 115, 22, 0.6); color: #fb923c;">🎃 LIVE</span>
     </div>
   </div>
 
@@ -172,14 +209,33 @@
       <!-- Callout con Lucchetto in Home per chi non ha confermato la squadra -->
       <div id="homeLockedCallout"></div>
 
-      <div class="section-header">
-        <div>
-          <h2 class="section-title"><span class="title-icon">📢</span> Avvisi Ufficiali</h2>
-          <p class="section-subtitle">Comunicazioni ufficiali e scadenze del Master Martina</p>
+      <!-- 1. AVVISI UFFICIALI DEL MASTER (In alto, box compatto a scorrimento con dissolvenza morbida) -->
+      <div class="home-notices-block master-block">
+        <div class="section-header" style="margin-bottom: 12px;">
+          <div>
+            <h2 class="section-title"><span class="title-icon">📢</span> Avvisi Ufficiali del Master</h2>
+            <p class="section-subtitle">Comunicazioni speciali, eventi e direttive del Master Martina</p>
+          </div>
+        </div>
+        <div class="master-notices-scroll-wrapper">
+          <div id="homeMasterNoticesList" class="master-notices-scroll-container"></div>
+          <div class="scroll-fade-overlay" aria-hidden="true"></div>
         </div>
       </div>
 
-      <div id="homeNoticesList"></div>
+      <!-- 2. ESITI SEGNALAZIONI & REGISTRO PARTITA (Subito sotto) -->
+      <div class="home-notices-block reports-block" style="margin-top: 26px;">
+        <div class="section-header" style="margin-bottom: 12px;">
+          <div>
+            <h2 class="section-title"><span class="title-icon">⚡</span> Esiti Segnalazioni & Registro Partita</h2>
+            <p class="section-subtitle">Convalide della bacheca, eventi accaduti e punti assegnati in tempo reale</p>
+          </div>
+        </div>
+        <div id="homeReportsNoticesList"></div>
+      </div>
+
+      <!-- Fallback invisibile per retrocompatibilità -->
+      <div id="homeNoticesList" style="display: none;"></div>
 
       <!-- Sezione Profilo Personale (visibile solo se loggato) -->
       <div id="userProfilePanel"></div>
@@ -273,6 +329,11 @@
           <tbody id="leaderboardBody"></tbody>
         </table>
       </div>
+    </section>
+
+    <!-- TAB: EVENTO SPECIALE (HALLOWEEN 2026) -->
+    <section id="tab-evento" class="tab-section">
+      <div id="eventSectionContent"></div>
     </section>
 
     <!-- 4. TAB: CATALOGO PERSONAGGI & CFA -->
@@ -387,6 +448,9 @@
           </div>
         </div>
       </div>
+
+      <!-- SEZIONE DEDICATA: GESTIONE RAPIDA EVENTO HALLOWEEN (11 COLLEGHI) -->
+      <div id="masterHalloweenSection"></div>
 
       <!-- LIVE SCORING ENGINE -->
       <div class="master-scoring-matrix">
@@ -556,6 +620,10 @@
     <button class="mobile-nav-item" data-tab="classifica">
       <span class="icon">🏆</span>
       <span class="label">Classifica</span>
+    </button>
+    <button class="mobile-nav-item" data-tab="evento">
+      <span class="icon">🎃</span>
+      <span class="label">Evento</span>
     </button>
     <button class="mobile-nav-item" data-tab="personaggi">
       <span class="icon">👥</span>

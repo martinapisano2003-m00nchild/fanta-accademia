@@ -17,8 +17,15 @@ class FantaApp {
     // Master live scoring state
     this.scoringSelectedCharId = 'door-e';
 
+    // Master Halloween Event state
+    this.halloweenScoringMode = 'single'; // 'single' | 'multi'
+    this.halloweenSelectedCollegaId = 'collega-marco';
+    this.halloweenMultiSelectedColleghiIds = [];
+    this.halloweenThrillerSelectedCoaches = [];
+
     this.initAudio();
     this.initDOM();
+    this.ensureHalloweenNotice();
     if (this.currentUser) {
       this.applyUserPalette(this.currentUser.username);
     }
@@ -28,6 +35,22 @@ class FantaApp {
     // Se l'utente non è autenticato e il gatekeeper è sbloccato, chiedi subito il login
     if (this.checkGatekeeper() && !this.currentUser) {
       this.openModal('loginModal');
+    }
+  }
+
+  ensureHalloweenNotice() {
+    try {
+      const notices = this.getData('fanta_notices') || [];
+      const hasHalloween = notices.some(n => n.id === 'notice-halloween-2026');
+      if (!hasHalloween) {
+        const halloweenNotice = (typeof INITIAL_NOTICES !== 'undefined' ? INITIAL_NOTICES : []).find(n => n.id === 'notice-halloween-2026');
+        if (halloweenNotice) {
+          notices.unshift(halloweenNotice);
+          this.saveData('fanta_notices', notices);
+        }
+      }
+    } catch (e) {
+      console.warn("Could not ensure halloween notice", e);
     }
   }
 
@@ -541,6 +564,7 @@ class FantaApp {
     this.renderHome();
     this.renderBuilder();
     this.renderCatalog();
+    this.renderEvent();
     this.renderSecretRules();
     this.renderMasterTips();
     this.renderLeaderboard();
@@ -607,19 +631,49 @@ class FantaApp {
   // --- SECTION: HOME ---
   renderHome() {
     const notices = this.getData('fanta_notices') || [];
-    const container = document.getElementById('homeNoticesList');
-    if (!container) return;
+    const masterContainer = document.getElementById('homeMasterNoticesList');
+    const reportsContainer = document.getElementById('homeReportsNoticesList');
+    const fallbackContainer = document.getElementById('homeNoticesList');
 
-    container.innerHTML = notices.map(n => `
-      <div class="notice-card annuncio">
+    // Separazione degli avvisi: quelli del Master in alto, gli esiti automatici/convalide in basso
+    const masterNotices = notices.filter(n => n.tipo !== 'RISULTATO SEGNALAZIONE');
+    const reportNotices = notices.filter(n => n.tipo === 'RISULTATO SEGNALAZIONE');
+
+    const renderCardHtml = (n) => `
+      <div class="notice-card annuncio ${n.id && n.id.includes('halloween') ? 'halloween-notice-card' : ''}">
         <div class="notice-top">
-          <span class="notice-badge">${n.icona || '📢'} ${n.tipo}</span>
+          <span class="notice-badge">${n.icona || '📢'} ${n.badge || n.tipo}</span>
           <span class="notice-date">${n.data}</span>
         </div>
-        <h4 class="notice-title">${n.titolo}</h4>
-        <p class="notice-body">${n.testo}</p>
+        <h4 class="notice-title">${this.escapeHtml(n.titolo)}</h4>
+        <p class="notice-body">${this.escapeHtml(n.testo)}</p>
+        ${n.actionBtn ? `
+          <button type="button" class="btn-notice-cta" onclick="app.switchTab('${n.actionBtn.tab}')">
+            ${n.actionBtn.label}
+          </button>
+        ` : ''}
       </div>
-    `).join('');
+    `;
+
+    if (masterContainer) {
+      if (masterNotices.length > 0) {
+        masterContainer.innerHTML = masterNotices.map(renderCardHtml).join('');
+      } else {
+        masterContainer.innerHTML = '<p style="color:var(--text-muted);font-size:0.88rem;padding:12px;">Nessun avviso ufficiale al momento.</p>';
+      }
+    }
+
+    if (reportsContainer) {
+      if (reportNotices.length > 0) {
+        reportsContainer.innerHTML = reportNotices.map(renderCardHtml).join('');
+      } else {
+        reportsContainer.innerHTML = '<p style="color:var(--text-muted);font-size:0.88rem;padding:12px;">Nessun esito o convalida registrata finora.</p>';
+      }
+    }
+
+    if (fallbackContainer) {
+      fallbackContainer.innerHTML = notices.map(renderCardHtml).join('');
+    }
 
     const lockedHomeArea = document.getElementById('homeLockedCallout');
     const isConfirmed = this.isUserTeamConfirmed();
@@ -1070,6 +1124,109 @@ class FantaApp {
     `;
     document.body.appendChild(conf);
     setTimeout(() => conf.remove(), 1800);
+  }
+
+  // --- SECTION: EVENTO SPECIALE (HALLOWEEN 2026 - MODULARE) ---
+  renderEvent() {
+    const container = document.getElementById('eventSectionContent');
+    if (!container) return;
+
+    const event = typeof CURRENT_EVENT !== 'undefined' ? CURRENT_EVENT : null;
+    if (!event || !event.active) {
+      container.innerHTML = `
+        <div class="card" style="text-align: center; padding: 40px 20px;">
+          <div style="font-size: 3rem; margin-bottom: 12px;">🎃</div>
+          <h2 style="color: #fff; font-size: 1.4rem; margin-bottom: 8px;">Nessun Evento Speciale Attivo</h2>
+          <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto;">
+            Al momento non ci sono eventi a tempo attivi. Tieni d'occhio gli avvisi del Master per le prossime serate speciali del Fanta-Accademia!
+          </p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = `
+      <!-- Event Hero Banner -->
+      <div class="event-hero">
+        <div class="event-hero-badge">${event.badge}</div>
+        <h2 class="event-hero-title">
+          <span>🎃</span>
+          <span>${event.titolo}</span>
+          <span style="font-size: 1.05rem; color: #fbbf24; font-weight: 700;">(${event.dateLabel})</span>
+        </h2>
+        <p class="event-hero-desc">
+          ${event.intro}
+        </p>
+      </div>
+
+      <!-- Regola Speciale per Squadra: Thriller -->
+      <div class="event-special-team-card">
+        <div style="display: flex; align-items: flex-start; gap: 14px; flex-wrap: wrap;">
+          <span style="font-size: 2.8rem; line-height: 1;">${event.specialTeam.icon}</span>
+          <div style="flex: 1; min-width: 240px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; flex-wrap: wrap;">
+              <h3 style="font-size: 1.2rem; color: #fbbf24; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+                <span>🎵</span> Regola Speciale Squadra: ${event.specialTeam.nome}
+              </h3>
+              <span class="event-rule-badge-bonus" style="font-size: 0.92rem; background: rgba(245, 158, 11, 0.2); border-color: rgba(245, 158, 11, 0.6); color: #fbbf24;">
+                +${event.specialTeam.pt} pt a ciascuna squadra presente
+              </span>
+            </div>
+            <p style="color: #fde68a; font-size: 0.92rem; line-height: 1.5;">
+              ${event.specialTeam.desc}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sezione Bonus Collega -->
+      <div style="margin-bottom: 28px;">
+        <h3 style="color: #34d399; font-size: 1.3rem; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+          <span>🎖️</span> Bonus Collega (${event.bonus.length} Azioni)
+        </h3>
+        <p style="color: var(--text-muted); font-size: 0.86rem; margin-bottom: 16px;">
+          I punti bonus conseguiti dal collega al Madween o durante la festa vengono accreditati a tutte le squadre che lo hanno schierato compagno di banco!
+        </p>
+        <div class="event-rules-grid">
+          ${event.bonus.map(b => `
+            <div class="event-rule-card bonus">
+              <div class="event-rule-card-top">
+                <span class="event-rule-name">
+                  <span>${b.icon}</span>
+                  <span>${b.nome}</span>
+                </span>
+                <span class="event-rule-badge-bonus">+${b.pt} pt</span>
+              </div>
+              <p class="event-rule-desc">${b.desc}</p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Sezione Malus Collega -->
+      <div style="margin-bottom: 28px;">
+        <h3 style="color: #f87171; font-size: 1.3rem; font-weight: 800; margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+          <span>💀</span> Malus Collega (${event.malus.length} Penalità)
+        </h3>
+        <p style="color: var(--text-muted); font-size: 0.86rem; margin-bottom: 16px;">
+          Se il collega incorre in una di queste situazioni, i punti di penalità verranno sottratti da tutte le squadre che lo hanno in formazione.
+        </p>
+        <div class="event-rules-grid">
+          ${event.malus.map(m => `
+            <div class="event-rule-card malus">
+              <div class="event-rule-card-top">
+                <span class="event-rule-name">
+                  <span>${m.icon}</span>
+                  <span>${m.nome}</span>
+                </span>
+                <span class="event-rule-badge-malus">${m.pt} pt</span>
+              </div>
+              <p class="event-rule-desc">${m.desc}</p>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
   }
 
   // --- SECTION: SECRET RULES ---
@@ -1649,8 +1806,401 @@ class FantaApp {
       }
     }
 
+    this.renderMasterHalloweenPanel();
     this.renderMasterLiveScoring();
     this.renderMasterUnlockControls();
+  }
+
+  // --- SECTION: PANNELLO MASTER SPECIALE EVENTO HALLOWEEN ---
+  setHalloweenMode(mode) {
+    this.halloweenScoringMode = mode;
+    this.renderMasterHalloweenPanel();
+  }
+
+  selectHalloweenCollega(collegaId) {
+    this.halloweenSelectedCollegaId = collegaId;
+    this.renderMasterHalloweenPanel();
+  }
+
+  toggleHalloweenMultiCollega(collegaId) {
+    const idx = this.halloweenMultiSelectedColleghiIds.indexOf(collegaId);
+    if (idx >= 0) {
+      this.halloweenMultiSelectedColleghiIds.splice(idx, 1);
+    } else {
+      this.halloweenMultiSelectedColleghiIds.push(collegaId);
+    }
+    this.renderMasterHalloweenPanel();
+  }
+
+  selectAllHalloweenMulti() {
+    this.halloweenMultiSelectedColleghiIds = COLLEGHI.map(c => c.id);
+    this.renderMasterHalloweenPanel();
+  }
+
+  deselectAllHalloweenMulti() {
+    this.halloweenMultiSelectedColleghiIds = [];
+    this.renderMasterHalloweenPanel();
+  }
+
+  toggleHalloweenThrillerCoach(username) {
+    const idx = this.halloweenThrillerSelectedCoaches.indexOf(username);
+    if (idx >= 0) {
+      this.halloweenThrillerSelectedCoaches.splice(idx, 1);
+    } else {
+      this.halloweenThrillerSelectedCoaches.push(username);
+    }
+    this.renderMasterHalloweenPanel();
+  }
+
+  selectAllHalloweenThrillerCoaches() {
+    const users = (this.getData('fanta_users') || INITIAL_USERS).map(u => u.username);
+    this.halloweenThrillerSelectedCoaches = [...users];
+    this.renderMasterHalloweenPanel();
+  }
+
+  deselectAllHalloweenThrillerCoaches() {
+    this.halloweenThrillerSelectedCoaches = [];
+    this.renderMasterHalloweenPanel();
+  }
+
+  assignHalloweenPoints(charId, ruleId) {
+    if (!this.currentUser || this.currentUser.role !== 'master') return;
+    const event = typeof CURRENT_EVENT !== 'undefined' ? CURRENT_EVENT : null;
+    if (!event) return;
+
+    const allRules = [...event.bonus, ...event.malus];
+    const rule = allRules.find(r => r.id === ruleId);
+    const charObj = COLLEGHI.find(c => c.id === charId);
+    if (!rule || !charObj) return;
+
+    const teams = this.getData('fanta_teams') || {};
+    const impactedCoaches = [];
+
+    Object.entries(teams).forEach(([coachName, team]) => {
+      if (team.confirmed && team.collega === charId) {
+        if (!team.puntiStorico) team.puntiStorico = [];
+        team.puntiStorico.push({
+          data: new Date().toLocaleDateString('it-IT') + ' ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+          motivo: `🎃 [Halloween] ${charObj.nome}: ${rule.nome}`,
+          pt: rule.pt
+        });
+        impactedCoaches.push(coachName);
+      }
+    });
+
+    this.saveData('fanta_teams', teams);
+
+    // Notifica automatica negli esiti della home
+    const notices = this.getData('fanta_notices') || [];
+    notices.unshift({
+      id: 'notice-halloween-event-' + Date.now(),
+      tipo: 'RISULTATO SEGNALAZIONE',
+      icona: '🎃',
+      badge: rule.pt >= 0 ? `+${rule.pt} pt Halloween` : `${rule.pt} pt Halloween`,
+      titolo: `🎃 Evento Halloween: ${charObj.nome} — ${rule.nome}`,
+      data: new Date().toLocaleDateString('it-IT'),
+      testo: `Il Master ha convalidato "${rule.nome}" (${rule.desc}) per ${charObj.nome}. ${rule.pt >= 0 ? '+' : ''}${rule.pt} pt assegnati a tutte le squadre che lo schierano (${impactedCoaches.length > 0 ? impactedCoaches.join(', ') : 'Nessuna squadra'}).`
+    });
+    this.saveData('fanta_notices', notices);
+
+    this.playSound(rule.pt >= 0 ? 'success' : 'glitch');
+    this.showToast(`🎃 Evento assegnato a ${charObj.nome} (${rule.pt >= 0 ? '+' : ''}${rule.pt} pt)! Squadre coinvolte: ${impactedCoaches.length > 0 ? impactedCoaches.join(', ') : 'Nessuna'}`, 'success');
+    this.render();
+  }
+
+  assignHalloweenPointsMulti(ruleId) {
+    if (!this.currentUser || this.currentUser.role !== 'master') return;
+    if (!this.halloweenMultiSelectedColleghiIds.length) {
+      this.showToast("⚠️ Seleziona almeno un collega con la spunta!", "danger");
+      return;
+    }
+    const event = typeof CURRENT_EVENT !== 'undefined' ? CURRENT_EVENT : null;
+    if (!event) return;
+
+    const allRules = [...event.bonus, ...event.malus];
+    const rule = allRules.find(r => r.id === ruleId);
+    if (!rule) return;
+
+    const teams = this.getData('fanta_teams') || {};
+    const impactedCoachesSet = new Set();
+    const colleagueNames = [];
+
+    this.halloweenMultiSelectedColleghiIds.forEach(charId => {
+      const charObj = COLLEGHI.find(c => c.id === charId);
+      if (!charObj) return;
+      colleagueNames.push(charObj.nome);
+
+      Object.entries(teams).forEach(([coachName, team]) => {
+        if (team.confirmed && team.collega === charId) {
+          if (!team.puntiStorico) team.puntiStorico = [];
+          team.puntiStorico.push({
+            data: new Date().toLocaleDateString('it-IT') + ' ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+            motivo: `🎃 [Halloween] ${charObj.nome}: ${rule.nome}`,
+            pt: rule.pt
+          });
+          impactedCoachesSet.add(coachName);
+        }
+      });
+    });
+
+    this.saveData('fanta_teams', teams);
+
+    const impactedCoaches = Array.from(impactedCoachesSet);
+    const notices = this.getData('fanta_notices') || [];
+    notices.unshift({
+      id: 'notice-halloween-multi-' + Date.now(),
+      tipo: 'RISULTATO SEGNALAZIONE',
+      icona: '🎃',
+      badge: rule.pt >= 0 ? `+${rule.pt} pt Halloween` : `${rule.pt} pt Halloween`,
+      titolo: `🎃 Evento Halloween Multiplo: ${colleagueNames.join(', ')} — ${rule.nome}`,
+      data: new Date().toLocaleDateString('it-IT'),
+      testo: `Il Master ha convalidato "${rule.nome}" per: ${colleagueNames.join(', ')}. ${rule.pt >= 0 ? '+' : ''}${rule.pt} pt assegnati a tutte le squadre che li schierano (${impactedCoaches.length > 0 ? impactedCoaches.join(', ') : 'Nessuna squadra'}).`
+    });
+    this.saveData('fanta_notices', notices);
+
+    this.playSound(rule.pt >= 0 ? 'success' : 'glitch');
+    this.showToast(`🎃 Bonus/Malus '${rule.nome}' assegnato a ${colleagueNames.length} colleghi!`, 'success');
+    this.render();
+  }
+
+  assignHalloweenThrillerTeamPoints() {
+    if (!this.currentUser || this.currentUser.role !== 'master') return;
+    if (!this.halloweenThrillerSelectedCoaches.length) {
+      this.showToast("⚠️ Seleziona almeno un allenatore presente al Madween!", "danger");
+      return;
+    }
+
+    const teams = this.getData('fanta_teams') || {};
+    const selectedCoaches = [...this.halloweenThrillerSelectedCoaches];
+
+    selectedCoaches.forEach(coachName => {
+      if (!teams[coachName]) {
+        teams[coachName] = { confirmed: false, puntiBase: 0, puntiStorico: [] };
+      }
+      if (!teams[coachName].puntiStorico) teams[coachName].puntiStorico = [];
+      teams[coachName].puntiStorico.push({
+        data: new Date().toLocaleDateString('it-IT') + ' ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+        motivo: `🎃 [Halloween] Inizio Serata con Thriller di Michael Jackson (Squadra Presente)`,
+        pt: 100
+      });
+    });
+
+    this.saveData('fanta_teams', teams);
+
+    const notices = this.getData('fanta_notices') || [];
+    notices.unshift({
+      id: 'notice-halloween-thriller-' + Date.now(),
+      tipo: 'RISULTATO SEGNALAZIONE',
+      icona: '🧟',
+      badge: '+100 pt Squadra',
+      titolo: `🧟 Speciale Thriller Michael Jackson: +100 pt alle squadre presenti!`,
+      data: new Date().toLocaleDateString('it-IT'),
+      testo: `La serata al Madween è iniziata con Thriller di Michael Jackson! Il Master ha accreditato +100 pt direttamente nelle squadre dei presenti: ${selectedCoaches.join(', ')}.`
+    });
+    this.saveData('fanta_notices', notices);
+
+    this.playSound('success');
+    this.showToast(`🧟 Thriller Michael Jackson convalidato! +100 pt accreditati alle squadre di: ${selectedCoaches.join(', ')}`, 'bonus');
+    this.render();
+  }
+
+  renderMasterHalloweenPanel() {
+    const container = document.getElementById('masterHalloweenSection');
+    if (!container) return;
+
+    const event = typeof CURRENT_EVENT !== 'undefined' ? CURRENT_EVENT : null;
+    if (!event || !event.active) {
+      container.innerHTML = '';
+      return;
+    }
+
+    const teams = this.getData('fanta_teams') || {};
+    const allCoaches = (this.getData('fanta_users') || INITIAL_USERS).map(u => u.username);
+
+    // Per il collega singolo attualmente selezionato
+    const currentChar = COLLEGHI.find(c => c.id === this.halloweenSelectedCollegaId) || COLLEGHI[0];
+    const owners = [];
+    Object.entries(teams).forEach(([cName, team]) => {
+      if (team.confirmed && team.collega === currentChar.id) {
+        owners.push(cName);
+      }
+    });
+
+    container.innerHTML = `
+      <div class="master-halloween-card">
+        <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 14px;">
+          <div>
+            <h3 style="color: #fb923c; font-size: 1.3rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+              <span>🎃</span> Gestione Rapida Evento Halloween
+            </h3>
+            <p style="color: #fdba74; font-size: 0.86rem;">
+              Assegna i bonus/malus del regolamento speciale direttamente agli 11 Colleghi.
+            </p>
+          </div>
+          <span style="background: rgba(249, 115, 22, 0.25); border: 1px solid rgba(249, 115, 22, 0.6); color: #fed7aa; padding: 4px 12px; border-radius: 20px; font-weight: 800; font-size: 0.78rem;">
+            🎃 30 & 31 OTTOBRE
+          </span>
+        </div>
+
+        <!-- Selettore modalità -->
+        <div class="master-mode-selector">
+          <button type="button" class="master-mode-btn ${this.halloweenScoringMode === 'single' ? 'active' : ''}" onclick="app.setHalloweenMode('single')">
+            ⚡ Assegnazione Singola (1 Collega)
+          </button>
+          <button type="button" class="master-mode-btn ${this.halloweenScoringMode === 'multi' ? 'active' : ''}" onclick="app.setHalloweenMode('multi')">
+            👥 Assegnazione Multipla (${this.halloweenMultiSelectedColleghiIds.length} Selezionati)
+          </button>
+        </div>
+
+        ${this.halloweenScoringMode === 'single' ? `
+          <!-- MODALITÀ SINGOLA -->
+          <div style="margin-bottom: 12px;">
+            <label style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-dark); font-weight: 700;">1. Scegli il Collega:</label>
+            <div class="matrix-char-picker" style="margin-top: 6px;">
+              ${COLLEGHI.map(c => `
+                <button type="button" class="char-chip ${c.id === currentChar.id ? 'active' : ''}" onclick="app.selectHalloweenCollega('${c.id}')">
+                  <span>${c.avatar}</span>
+                  <span>${c.nome}</span>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <div style="background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(255, 255, 255, 0.1); padding: 12px 16px; border-radius: 10px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="font-size: 2rem;">${currentChar.avatar}</span>
+              <div>
+                <strong style="color: #fff; font-size: 1.1rem;">${currentChar.nome}</strong>
+                <div style="font-size: 0.76rem; color: #fbbf24;">Collega Compagno di Banco</div>
+              </div>
+            </div>
+            <div style="text-align: right;">
+              <div style="font-size: 0.75rem; color: var(--text-dark); text-transform: uppercase;">Schierato in squadra da (${owners.length}):</div>
+              <strong style="color: ${owners.length > 0 ? '#34d399' : '#f87171'}; font-size: 0.95rem;">
+                ${owners.length > 0 ? owners.join(', ') : 'Nessuna squadra'}
+              </strong>
+            </div>
+          </div>
+
+          <!-- Pulsanti Rapidi Bonus -->
+          <div style="margin-bottom: 16px;">
+            <label style="font-size: 0.8rem; text-transform: uppercase; color: #34d399; font-weight: 800; display: block; margin-bottom: 8px;">
+              2. Clicca un Bonus da assegnare a ${currentChar.nome}:
+            </label>
+            <div class="halloween-action-grid">
+              ${event.bonus.map(b => `
+                <button type="button" class="btn-halloween-action bonus-btn" onclick="app.assignHalloweenPoints('${currentChar.id}', '${b.id}')">
+                  <span>${b.icon} ${b.nome}</span>
+                  <span style="color: #34d399; font-weight: 800;">+${b.pt} pt</span>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Pulsanti Rapidi Malus -->
+          <div style="margin-bottom: 22px;">
+            <label style="font-size: 0.8rem; text-transform: uppercase; color: #f87171; font-weight: 800; display: block; margin-bottom: 8px;">
+              Oppure clicca un Malus:
+            </label>
+            <div class="halloween-action-grid">
+              ${event.malus.map(m => `
+                <button type="button" class="btn-halloween-action malus-btn" onclick="app.assignHalloweenPoints('${currentChar.id}', '${m.id}')">
+                  <span>${m.icon} ${m.nome}</span>
+                  <span style="color: #f87171; font-weight: 800;">${m.pt} pt</span>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        ` : `
+          <!-- MODALITÀ MULTIPLA -->
+          <div style="margin-bottom: 18px;">
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+              <label style="font-size: 0.8rem; text-transform: uppercase; color: var(--text-dark); font-weight: 700;">
+                1. Spunta i Colleghi che hanno compiuto l'azione:
+              </label>
+              <div style="display: flex; gap: 8px;">
+                <button type="button" class="btn-recruit" style="padding: 4px 10px; font-size: 0.76rem;" onclick="app.selectAllHalloweenMulti()">✓ Tutti</button>
+                <button type="button" class="btn-recruit" style="padding: 4px 10px; font-size: 0.76rem; border-color: rgba(239,68,68,0.4); color: #fca5a5;" onclick="app.deselectAllHalloweenMulti()">✕ Nessuno</button>
+              </div>
+            </div>
+            <div class="colleghi-multi-grid">
+              ${COLLEGHI.map(c => {
+                const isChecked = this.halloweenMultiSelectedColleghiIds.includes(c.id);
+                return `
+                  <label class="collega-multi-label ${isChecked ? 'selected' : ''}" onclick="app.toggleHalloweenMultiCollega('${c.id}')">
+                    <input type="checkbox" ${isChecked ? 'checked' : ''} style="pointer-events: none;">
+                    <span>${c.avatar}</span>
+                    <strong style="font-size: 0.88rem;">${c.nome}</strong>
+                  </label>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <!-- Pulsanti Rapidi Multipli Bonus -->
+          <div style="margin-bottom: 16px;">
+            <label style="font-size: 0.8rem; text-transform: uppercase; color: #34d399; font-weight: 800; display: block; margin-bottom: 8px;">
+              2. Assegna questo Bonus a TUTTI i colleghi selezionati (${this.halloweenMultiSelectedColleghiIds.length}):
+            </label>
+            <div class="halloween-action-grid">
+              ${event.bonus.map(b => `
+                <button type="button" class="btn-halloween-action bonus-btn" onclick="app.assignHalloweenPointsMulti('${b.id}')">
+                  <span>${b.icon} ${b.nome}</span>
+                  <span style="color: #34d399; font-weight: 800;">+${b.pt} pt</span>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Pulsanti Rapidi Multipli Malus -->
+          <div style="margin-bottom: 22px;">
+            <label style="font-size: 0.8rem; text-transform: uppercase; color: #f87171; font-weight: 800; display: block; margin-bottom: 8px;">
+              Oppure assegna questo Malus a tutti i selezionati:
+            </label>
+            <div class="halloween-action-grid">
+              ${event.malus.map(m => `
+                <button type="button" class="btn-halloween-action malus-btn" onclick="app.assignHalloweenPointsMulti('${m.id}')">
+                  <span>${m.icon} ${m.nome}</span>
+                  <span style="color: #f87171; font-weight: 800;">${m.pt} pt</span>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        `}
+
+        <!-- CARD SPECIALE THRILLER MICHAEL JACKSON -->
+        <div style="border-top: 1px dashed rgba(249, 115, 22, 0.4); padding-top: 18px; margin-top: 10px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;">
+            <h4 style="color: #fbbf24; font-size: 1.05rem; font-weight: 800; display: flex; align-items: center; gap: 8px;">
+              <span>🧟</span> Accredito Squadra: Thriller di Michael Jackson (+100 pt)
+            </h4>
+            <div style="display: flex; gap: 8px;">
+              <button type="button" class="btn-recruit" style="padding: 4px 10px; font-size: 0.76rem;" onclick="app.selectAllHalloweenThrillerCoaches()">✓ Seleziona Tutti i Presenti</button>
+              <button type="button" class="btn-recruit" style="padding: 4px 10px; font-size: 0.76rem; border-color: rgba(239,68,68,0.4); color: #fca5a5;" onclick="app.deselectAllHalloweenThrillerCoaches()">✕ Nessuno</button>
+            </div>
+          </div>
+          <p style="color: #cbd5e1; font-size: 0.85rem; margin-bottom: 12px;">
+            Seleziona gli allenatori che erano presenti al Madween per accreditare i +100 pt direttamente nella classifica delle loro squadre:
+          </p>
+          <div class="colleghi-multi-grid" style="margin-bottom: 14px;">
+            ${allCoaches.map(cName => {
+              const isChecked = this.halloweenThrillerSelectedCoaches.includes(cName);
+              const uObj = (this.getData('fanta_users') || INITIAL_USERS).find(u => u.username === cName);
+              return `
+                <label class="collega-multi-label ${isChecked ? 'selected' : ''}" onclick="app.toggleHalloweenThrillerCoach('${cName}')">
+                  <input type="checkbox" ${isChecked ? 'checked' : ''} style="pointer-events: none;">
+                  <span>${uObj?.avatar || '👤'}</span>
+                  <strong style="font-size: 0.88rem;">${cName}</strong>
+                </label>
+              `;
+            }).join('')}
+          </div>
+          <button type="button" class="btn-thriller-special" onclick="app.assignHalloweenThrillerTeamPoints()">
+            🎵 Assegna +100 pt Thriller alle ${this.halloweenThrillerSelectedCoaches.length} Squadre Selezionate
+          </button>
+        </div>
+      </div>
+    `;
   }
 
   renderMasterLiveScoring() {

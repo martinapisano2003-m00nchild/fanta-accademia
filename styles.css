@@ -2513,3 +2513,468 @@ body {
   transform: scale(1.2);
   background: rgba(255, 255, 255, 0.15);
 }
+
+/* ============================================================
+   HALLOWEEN SPECIAL EVENT & DECORATIONS 2026
+   ============================================================ */
+
+/* 1. DECORAZIONI AMBIENTALI HALLOWEEN (NON INTERFERISCONO CON I CLICK) */
+.halloween-decorations {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  overflow: hidden;
+}
+
+.halloween-web {
+  position: absolute;
+  width: 130px;
+  height: 130px;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.web-top-left {
+  top: 0;
+  left: 0;
+}
+
+.web-top-right {
+  top: 0;
+  right: 0;
+}
+
+.web-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.25));
+}
+
+.halloween-spider {
+  position: absolute;
+  bottom: 12px;
+  right: 18px;
+  font-size: 1.35rem;
+  transform-origin: top center;
+  animation: spiderSwing 3.2s ease-in-out infinite alternate;
+}
+
+@keyframes spiderSwing {
+  0% { transform: rotate(-14deg) translateY(0); }
+  50% { transform: rotate(0deg) translateY(4px); }
+  100% { transform: rotate(14deg) translateY(0); }
+}
+
+/* Pipistrelli animati */
+.halloween-bat {
+  position: absolute;
+  font-size: 1.5rem;
+  pointer-events: none;
+  opacity: 0.75;
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.9));
+}
+
+.bat-1 {
+  top: 15%;
+  left: -50px;
+  animation: batGlide1 24s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.bat-2 {
+  top: 38%;
+  right: -50px;
+  animation: batGlide2 28s cubic-bezier(0.4, 0, 0.2, 1) 12s infinite;
+}
+
+.bat-3 {
+  top: 65%;
+  left: -50px;
+  animation: batGlide3 32s cubic-bezier(0.4, 0, 0.2, 1) 6s infinite;
+}
+
+@keyframes batGlide1 {
+  0% { transform: translate(-50px, 0) scale(0.8) rotate(15deg); opacity: 0; }
+  10% { opacity: 0.8; }
+  50% { transform: translate(50vw, 35px) scale(1) rotate(-8deg); }
+  90% { opacity: 0.8; }
+  100% { transform: translate(110vw, -20px) scale(0.8) rotate(10deg); opacity: 0; }
+}
+
+@keyframes batGlide2 {
+  0% { transform: translate(50px, 0) scale(0.9) rotate(-15deg); opacity: 0; }
+  10% { opacity: 0.75; }
+  50% { transform: translate(-50vw, -30px) scale(1.1) rotate(6deg); }
+  90% { opacity: 0.75; }
+  100% { transform: translate(-110vw, 20px) scale(0.8) rotate(-10deg); opacity: 0; }
+}
+
+@keyframes batGlide3 {
+  0% { transform: translate(-50px, 0) scale(0.7) rotate(12deg); opacity: 0; }
+  10% { opacity: 0.7; }
+  50% { transform: translate(50vw, 25px) scale(0.95) rotate(-12deg); }
+  90% { opacity: 0.7; }
+  100% { transform: translate(110vw, -15px) scale(0.75) rotate(8deg); opacity: 0; }
+}
+
+/* Zucche galleggianti ai lati */
+.halloween-pumpkin-ambient {
+  position: fixed;
+  font-size: 1.5rem;
+  opacity: 0.35;
+  filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.5));
+  pointer-events: none;
+  z-index: 9997;
+}
+
+.pumpkin-left {
+  bottom: 110px;
+  left: 12px;
+  animation: pumpkinFloat 4s ease-in-out infinite alternate;
+}
+
+.pumpkin-right {
+  top: 140px;
+  right: 14px;
+  animation: pumpkinFloat 5s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes pumpkinFloat {
+  0% { transform: translateY(0) rotate(-6deg); }
+  100% { transform: translateY(-12px) rotate(6deg); }
+}
+
+@media (max-width: 600px) {
+  .halloween-web { width: 85px; height: 85px; }
+  .halloween-spider { font-size: 1.1rem; bottom: 8px; right: 12px; }
+  .pumpkin-left, .pumpkin-right { display: none; }
+}
+
+/* 2. BANNER SUPERIORE HALLOWEEN THEME */
+.halloween-banner-theme {
+  background: linear-gradient(90deg, rgba(249, 115, 22, 0.18) 0%, rgba(139, 92, 246, 0.22) 50%, rgba(249, 115, 22, 0.18) 100%) !important;
+  border-bottom: 1px solid rgba(249, 115, 22, 0.45) !important;
+  box-shadow: 0 4px 18px rgba(249, 115, 22, 0.12);
+}
+
+/* 3. HOME: SCROLL & FADE PER GLI AVVISI MASTER */
+.master-notices-scroll-wrapper {
+  position: relative;
+}
+
+.master-notices-scroll-container {
+  max-height: 420px;
+  overflow-y: auto;
+  padding-right: 6px;
+  padding-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  scroll-behavior: smooth;
+}
+
+.master-notices-scroll-container::-webkit-scrollbar {
+  width: 6px;
+}
+.master-notices-scroll-container::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+}
+.master-notices-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(249, 115, 22, 0.4);
+  border-radius: 4px;
+}
+.master-notices-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(249, 115, 22, 0.7);
+}
+
+.scroll-fade-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 42px;
+  background: linear-gradient(to bottom, transparent, var(--bg-main, #0c0919));
+  pointer-events: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* Pulsante CTA Avviso Halloween ("Vai all'Evento") */
+.btn-notice-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 20px;
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 50%, #9333ea 100%);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 10px;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(249, 115, 22, 0.4);
+  transition: all 0.25s ease;
+}
+
+.btn-notice-cta:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 6px 22px rgba(249, 115, 22, 0.6);
+  color: #fff;
+}
+
+/* 4. SEZIONE EVENTO HALLOWEEN */
+.event-hero {
+  background: linear-gradient(135deg, rgba(249, 115, 22, 0.16) 0%, rgba(139, 92, 246, 0.2) 50%, rgba(12, 9, 25, 0.95) 100%);
+  border: 1.5px solid rgba(249, 115, 22, 0.35);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 25px rgba(249, 115, 22, 0.15);
+  border-radius: var(--radius-md);
+  padding: 28px 24px;
+  margin-bottom: 26px;
+  position: relative;
+  overflow: hidden;
+}
+
+.event-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(249, 115, 22, 0.2);
+  border: 1px solid rgba(249, 115, 22, 0.5);
+  color: #fb923c;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+
+.event-hero-title {
+  font-size: 1.85rem;
+  font-weight: 800;
+  color: #fff;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.event-hero-desc {
+  color: var(--text-muted);
+  font-size: 0.94rem;
+  line-height: 1.6;
+  max-width: 820px;
+}
+
+.event-rules-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.event-rule-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 16px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: transform 0.2s, box-shadow 0.2s;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.event-rule-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.event-rule-card.bonus {
+  border-left: 4px solid #10b981;
+}
+
+.event-rule-card.malus {
+  border-left: 4px solid #ef4444;
+}
+
+.event-rule-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.event-rule-name {
+  font-weight: 700;
+  color: #fff;
+  font-size: 0.96rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.event-rule-badge-bonus {
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.45);
+  color: #34d399;
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 3px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.event-rule-badge-malus {
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  color: #f87171;
+  font-weight: 800;
+  font-size: 0.82rem;
+  padding: 3px 10px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+.event-rule-desc {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+/* Regola speciale per squadra: Thriller */
+.event-special-team-card {
+  background: linear-gradient(135deg, rgba(139, 92, 246, 0.18) 0%, rgba(245, 158, 11, 0.18) 100%);
+  border: 2px solid #f59e0b;
+  box-shadow: 0 8px 28px rgba(245, 158, 11, 0.2);
+  border-radius: var(--radius-md);
+  padding: 22px;
+  margin-bottom: 30px;
+}
+
+/* 5. PANNELLO RAPIDO MASTER PER HALLOWEEN */
+.master-halloween-card {
+  background: linear-gradient(145deg, rgba(30, 20, 10, 0.85), rgba(18, 12, 34, 0.95));
+  border: 2px solid rgba(249, 115, 22, 0.5);
+  box-shadow: 0 8px 32px rgba(249, 115, 22, 0.18);
+  border-radius: var(--radius-md);
+  padding: 24px;
+  margin-bottom: 28px;
+}
+
+.master-mode-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.master-mode-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  transition: all 0.2s;
+}
+
+.master-mode-btn.active {
+  background: rgba(249, 115, 22, 0.25);
+  border-color: #f97316;
+  color: #fff;
+  box-shadow: 0 0 12px rgba(249, 115, 22, 0.35);
+}
+
+.colleghi-multi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.collega-multi-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 0.85rem;
+  color: #cbd5e1;
+  transition: all 0.15s;
+}
+
+.collega-multi-label:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.collega-multi-label.selected {
+  background: rgba(249, 115, 22, 0.2);
+  border-color: #f97316;
+  color: #fff;
+}
+
+.halloween-action-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.btn-halloween-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: left;
+  transition: all 0.15s;
+}
+
+.btn-halloween-action:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-halloween-action.bonus-btn:hover {
+  border-color: #10b981;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.btn-halloween-action.malus-btn:hover {
+  border-color: #ef4444;
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
+.btn-thriller-special {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  border: 1px solid #fbbf24;
+  color: #000;
+  font-weight: 800;
+  padding: 12px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.4);
+  font-size: 0.92rem;
+  transition: all 0.2s;
+}
+
+.btn-thriller-special:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 22px rgba(245, 158, 11, 0.6);
+}

@@ -458,8 +458,53 @@ const MASTER_TIPS = [
   }
 ];
 
+// 5.5 CONFIGURAZIONE EVENTO ATTIVO (HALLOWEEN 2026 - MODULARE PER EVENTI FUTURI)
+const CURRENT_EVENT = {
+  id: "halloween-2026",
+  active: true,
+  titolo: "Evento Halloween",
+  dateLabel: "30 e 31 Ottobre 2026",
+  bannerText: "Evento Halloween — 30 e 31 Ottobre 2026",
+  badge: "🎃 EVENTO LIVE",
+  intro: "Benvenuti nel primo Evento Speciale del Fanta-Accademia! Questo regolamento temporaneo è valido per le serate del 30 e 31 Ottobre 2026. Tutti i punti bonus e malus accumulati dai colleghi vengono accreditati alle squadre che li hanno schierati, più un bonus speciale di squadra!",
+  bonus: [
+    { id: "madween", nome: "Madween", pt: 200, desc: "Si presenta al Madween del 30 Ottobre", icon: "🎃" },
+    { id: "costume", nome: "Vestito di Halloween", pt: 150, desc: "Si presenta al Madween in costume", icon: "🧛" },
+    { id: "gang", nome: "Organizzazione Criminale", pt: 80, desc: "Due o più colleghi con lo stesso tema nel costume", icon: "👥" },
+    { id: "paparazzi", nome: "Paparazzi", pt: 200, desc: "Uno sconosciuto chiede di farsi una foto insieme", icon: "📸" },
+    { id: "side-quest", nome: "Side Quest", pt: 20, desc: "Chiede ad altre persone in costume di farsi una foto insieme", icon: "🤝" },
+    { id: "sobrieta", nome: "Sobrietà", pt: 40, desc: "Non tocca nemmeno un goccio di alcool", icon: "🥤" },
+    { id: "notte-giovane", nome: "La notte è giovane", pt: 100, desc: "Finito il Mad, continua a festeggiare in un'altra location", icon: "🌙" },
+    { id: "doppio-costume", nome: "Doppio Costume", pt: 100, desc: "Si presenta in costume sia il 30 che il 31", icon: "🎭" },
+    { id: "compagnia-31", nome: "Halloween in compagnia", pt: 150, desc: "Passa il 31 Ottobre con altri tre, o più, colleghi", icon: "👯" },
+    { id: "spirito-festivo", nome: "Spirito festivo", pt: 100, desc: "Rimane a casa e apre ai bambini che fanno Dolcetto o Scherzetto", icon: "🍬" }
+  ],
+  malus: [
+    { id: "sgravato", nome: "Sgravato", pt: -100, desc: "Si ubriaca in modo evidente", icon: "🥴" },
+    { id: "devastazione", nome: "Devastazione", pt: -30, desc: "Il costume si rompe o il trucco si rovina in modo evidente", icon: "💔" },
+    { id: "ritardatario", nome: "Ritardat(ari)o", pt: -30, desc: "Arriva per ultimo al Madween", icon: "⏰" }
+  ],
+  specialTeam: {
+    id: "thriller",
+    nome: "Inizio con Thriller di Michael Jackson",
+    pt: 100,
+    desc: "100pt direttamente nelle squadre dei presenti al Madween se la serata inizia con Thriller di Michael Jackson",
+    icon: "🧟"
+  }
+};
+
 // 6. AVVISI INIZIALI
 const INITIAL_NOTICES = [
+  {
+    id: "notice-halloween-2026",
+    tipo: "ANNUNCIO MASTER",
+    icona: "🎃",
+    badge: "Evento Speciale",
+    titolo: "Evento Halloween",
+    data: "29 Ottobre 2026",
+    testo: "Benvenuti giocatori nel primo evento del Fanta-Accademia! Non è stata una sorpresa ma spero vi abbia comunque fatto emozionare questo avviso, mi aspetto urletti di felicità se no ci rimango male. Tornando a noi, in quanto Evento Speciale, l'Evento Halloween ha un suo regolamento in una sezione dedicata, che vi permetterà di guadagnare (o perdere) una bella quantità di punti. Ricordatevi che è comunque un gioco, non prendetevela se cambierà completamente l'attuale classifica, pensate a divertirvi e far divertire anche gli altri. Buon Halloween!",
+    actionBtn: { label: "🎃 Vai all'Evento", tab: "evento" }
+  },
   {
     id: "notice-season-open",
     tipo: "ANNUNCIO MASTER",
