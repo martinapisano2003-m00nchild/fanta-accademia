@@ -458,15 +458,15 @@ const MASTER_TIPS = [
   }
 ];
 
-// 5.5 CONFIGURAZIONE EVENTO ATTIVO (HALLOWEEN 2026 - MODULARE PER EVENTI FUTURI)
+// 5.5 CONFIGURAZIONE EVENTO ATTIVO (MODULARE PER EVENTI FUTURI)
 const CURRENT_EVENT = {
   id: "halloween-2026",
-  active: true,
-  titolo: "Evento Halloween",
+  active: false, // Disattivato post-Halloween
+  titolo: "Evento Halloween (Concluso)",
   dateLabel: "30 e 31 Ottobre 2026",
-  bannerText: "Evento Halloween — 30 e 31 Ottobre 2026",
-  badge: "🎃 EVENTO LIVE",
-  intro: "Benvenuti nel primo Evento Speciale del Fanta-Accademia! Questo regolamento temporaneo è valido per le serate del 30 e 31 Ottobre 2026. Tutti i punti bonus e malus accumulati dai colleghi vengono accreditati alle squadre che li hanno schierati, più un bonus speciale di squadra!",
+  bannerText: "Edizione Primo Semestre 2026 in corso",
+  badge: "🔒 EVENTO CONCLUSO",
+  intro: "L'Evento Speciale di Halloween 2026 si è concluso! Tutti i punti bonus e malus assegnati sono stati registrati nella classifica live. Questa sezione rimane bloccata in attesa del prossimo evento speciale del Fanta-Accademia!",
   bonus: [
     { id: "madween", nome: "Madween", pt: 200, desc: "Si presenta al Madween del 30 Ottobre", icon: "🎃" },
     { id: "costume", nome: "Vestito di Halloween", pt: 150, desc: "Si presenta al Madween in costume", icon: "🧛" },

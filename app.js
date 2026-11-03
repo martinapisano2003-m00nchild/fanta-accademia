@@ -14,11 +14,20 @@ class FantaApp {
     this.selectedDocenti = [];
     this.selectedCollega = null;
 
+    // Report photo upload state (Caricamento foto da galleria / fotocamera)
+    this.reportUploadedPhoto = null;
+
+    // PWA & Notifiche Push
+    this.deferredPrompt = null;
+    this._prevReportsSnapshot = null;
+    this._prevNoticesSnapshot = null;
+    this._prevTipsSnapshot = null;
+
     // Master live scoring state
     this.scoringSelectedCharId = 'door-e';
 
-    // Master Halloween Event state
-    this.halloweenScoringMode = 'single'; // 'single' | 'multi'
+    // Master Halloween Event state (concluso)
+    this.halloweenScoringMode = 'single';
     this.halloweenSelectedCollegaId = 'collega-marco';
     this.halloweenMultiSelectedColleghiIds = [];
     this.halloweenThrillerSelectedCoaches = [];
@@ -163,6 +172,8 @@ class FantaApp {
       window.fantaDB.ref(key).on('value', snap => {
         const val = snap.val();
         if (val !== null) {
+          // Notifiche di sistema push sul dispositivo per nuovi eventi
+          this.handleFirebaseRealtimeNotification(key, val);
           // Cache locale per accesso sincrono
           localStorage.setItem('_fb_cache_' + key, JSON.stringify(val));
           // Aggiorna UI se l'app è già inizializzata
@@ -455,7 +466,58 @@ class FantaApp {
     this.setupManualPointsForm();
     this.setupMasterDirectEventForm();
 
+    // Chiusura menu drawer o modali con tasto Esc
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        this.closeDrawer();
+        this.closeAllModals();
+      }
+    });
+
+    // PWA & Notifiche
+    this.initPwa();
+    this.updateNotificationButtonState();
+
     this.loadUserBuilderState();
+  }
+
+  // --- DRAWER MENU A TENDINA A SCOMPARSA (LATO SINISTRO) ---
+  toggleDrawer() {
+    const drawer = document.getElementById('appDrawer');
+    if (drawer && (drawer.classList.contains('open') || drawer.classList.contains('active'))) {
+      this.closeDrawer();
+    } else {
+      this.openDrawer();
+    }
+  }
+
+  openDrawer() {
+    const drawer = document.getElementById('appDrawer');
+    const overlay = document.getElementById('drawerOverlay');
+    if (drawer) {
+      drawer.classList.add('open');
+      drawer.classList.add('active');
+    }
+    if (overlay) {
+      overlay.classList.add('open');
+      overlay.classList.add('active');
+    }
+    document.body.classList.add('drawer-open');
+    this.updateNotificationButtonState();
+  }
+
+  closeDrawer() {
+    const drawer = document.getElementById('appDrawer');
+    const overlay = document.getElementById('drawerOverlay');
+    if (drawer) {
+      drawer.classList.remove('open');
+      drawer.classList.remove('active');
+    }
+    if (overlay) {
+      overlay.classList.remove('open');
+      overlay.classList.remove('active');
+    }
+    document.body.classList.remove('drawer-open');
   }
 
   closeAllModals() {
@@ -506,8 +568,22 @@ class FantaApp {
       }
     }
 
+    // Controllo specifico Soffiate Master: visibile SOLO a chi ha Martina in squadra (Masi, Mar) oppure Martina Master
+    if (tabName === 'soffiate') {
+      const teams = this.getData('fanta_teams') || {};
+      const myTeam = this.currentUser ? teams[this.currentUser.username] : null;
+      const hasMartina = myTeam && myTeam.confirmed && myTeam.collega === 'collega-martina';
+      if (!hasMartina && !isMaster) {
+        this.playSound('glitch');
+        this.showToast("🔒 Le Soffiate del Master sono visibili solo a chi ha Martina in squadra!", "danger");
+        this.switchTab('squadra');
+        return;
+      }
+    }
+
     this.currentTab = tabName;
     this.playSound('click');
+    this.closeDrawer();
 
     if (tabName === 'home') {
       this.markAllNoticesAsSeen();
@@ -603,13 +679,22 @@ class FantaApp {
       }
     }
 
+    const isMaster = this.currentUser.role === 'master';
     const masterNavItems = document.querySelectorAll('.nav-master-only');
     masterNavItems.forEach(el => {
-      el.style.display = (this.currentUser.role === 'master') ? 'flex' : 'none';
+      el.style.display = isMaster ? 'flex' : 'none';
+    });
+
+    // Visibilità Soffiate Master: SOLO chi ha Martina in squadra (Masi, Mar) oppure Master
+    const teams = this.getData('fanta_teams') || {};
+    const myTeam = this.currentUser ? teams[this.currentUser.username] : null;
+    const hasMartina = myTeam && myTeam.confirmed && myTeam.collega === 'collega-martina';
+
+    document.querySelectorAll('.nav-soffiate-only').forEach(el => {
+      el.style.display = (hasMartina || isMaster) ? 'flex' : 'none';
     });
 
     const isConfirmed = this.isUserTeamConfirmed();
-    const isMaster = this.currentUser.role === 'master';
     const isUnlocked = isConfirmed || isMaster;
 
     document.querySelectorAll('[data-tab="classifica"], [data-tab="social"], [data-tab="secret"]').forEach(tab => {
@@ -1134,12 +1219,19 @@ class FantaApp {
     const event = typeof CURRENT_EVENT !== 'undefined' ? CURRENT_EVENT : null;
     if (!event || !event.active) {
       container.innerHTML = `
-        <div class="card" style="text-align: center; padding: 40px 20px;">
-          <div style="font-size: 3rem; margin-bottom: 12px;">🎃</div>
-          <h2 style="color: #fff; font-size: 1.4rem; margin-bottom: 8px;">Nessun Evento Speciale Attivo</h2>
-          <p style="color: var(--text-muted); max-width: 500px; margin: 0 auto;">
-            Al momento non ci sono eventi a tempo attivi. Tieni d'occhio gli avvisi del Master per le prossime serate speciali del Fanta-Accademia!
+        <div class="card" style="text-align: center; padding: 48px 24px; border: 1px solid rgba(255,255,255,0.08); background: linear-gradient(135deg, rgba(20,16,38,0.9), rgba(12,9,25,0.95)); border-radius: 20px;">
+          <div style="font-size: 3.5rem; margin-bottom: 14px;">🎪🔒</div>
+          <h2 style="color: #fff; font-size: 1.55rem; font-weight: 800; margin-bottom: 8px;">Sezione Evento Momentaneamente Chiusa</h2>
+          <div style="display: inline-block; padding: 4px 14px; background: rgba(245, 158, 11, 0.15); border: 1px solid rgba(245, 158, 11, 0.4); border-radius: 20px; color: #fbbf24; font-size: 0.85rem; font-weight: 700; margin-bottom: 16px;">
+            🎃 Evento Halloween 2026 Concluso
+          </div>
+          <p style="color: var(--text-muted); max-width: 520px; margin: 0 auto 22px; font-size: 0.95rem; line-height: 1.6;">
+            L'evento speciale di Halloween del 30 e 31 Ottobre si è concluso con successo e tutti i bonus e malus sono stati conteggiati nella classifica generale.<br>
+            Questa sezione si riaprirà in occasione del prossimo evento a sorpresa annunciato dal Master!
           </p>
+          <button type="button" class="btn-confirm-squad" style="width: auto; margin: 0 auto; padding: 10px 24px;" onclick="app.switchTab('classifica')">
+            🏆 Vai alla Classifica Live
+          </button>
         </div>
       `;
       return;
@@ -1724,6 +1816,7 @@ class FantaApp {
     });
 
     this.saveData('fanta_reports', reports);
+    this._prevReportsSnapshot = JSON.parse(JSON.stringify(reports));
     input.value = '';
     this.playSound('coin');
     this.showToast("💬 Commento pubblicato!", "info");
@@ -1998,6 +2091,7 @@ class FantaApp {
       testo: `La serata al Madween è iniziata con Thriller di Michael Jackson! Il Master ha accreditato +100 pt direttamente nelle squadre dei presenti: ${selectedCoaches.join(', ')}.`
     });
     this.saveData('fanta_notices', notices);
+    this._prevNoticesSnapshot = JSON.parse(JSON.stringify(notices));
 
     this.playSound('success');
     this.showToast(`🧟 Thriller Michael Jackson convalidato! +100 pt accreditati alle squadre di: ${selectedCoaches.join(', ')}`, 'bonus');
@@ -2411,6 +2505,7 @@ class FantaApp {
 
     rep.stato = 'approvata';
     this.saveData('fanta_reports', reports);
+    this._prevReportsSnapshot = JSON.parse(JSON.stringify(reports));
 
     // Supporto sia singolo personaggio che multi-personaggi
     const targetCharIds = Array.isArray(rep.personaggiIds) && rep.personaggiIds.length > 0
@@ -2452,6 +2547,7 @@ class FantaApp {
       testo: `Il Master ha approvato: "${rep.titolo}" (${rep.punti >= 0 ? '+' : ''}${rep.punti} pt). Punti accreditati alle squadre con: ${rep.personaggiNomi || rep.personaggioNome}.`
     });
     this.saveData('fanta_notices', notices);
+    this._prevNoticesSnapshot = JSON.parse(JSON.stringify(notices));
 
     this.playSound('success');
     this.showToast(`✅ Segnalazione approvata! Punti accreditati a: ${impactedCoaches.length > 0 ? impactedCoaches.join(', ') : 'Nessuna squadra ha questo personaggio'}`, 'success');
@@ -2468,6 +2564,7 @@ class FantaApp {
 
     rep.stato = 'rifiutata';
     this.saveData('fanta_reports', reports);
+    this._prevReportsSnapshot = JSON.parse(JSON.stringify(reports));
 
     // Auto-pubblicazione avviso ufficiale in Home
     const notices = this.getData('fanta_notices') || [];
@@ -2481,6 +2578,7 @@ class FantaApp {
       testo: `Il Master ha esaminato e non convalidato: "${rep.titolo}". Nessun punto assegnato.`
     });
     this.saveData('fanta_notices', notices);
+    this._prevNoticesSnapshot = JSON.parse(JSON.stringify(notices));
 
     this.playSound('click');
     this.showToast(`Segnalazione #${reportId} rifiutata.`, 'info');
@@ -2564,6 +2662,7 @@ class FantaApp {
           return;
         }
         this._selectedReportCharIds = [];
+        this.removeReportPhotoUpload();
         this.renderReportCharPicker();
         this.openModal('newReportModal');
       });
@@ -2602,7 +2701,9 @@ class FantaApp {
         const catSelect = document.getElementById('reportEventoSelect');
         const catVal = catSelect.value || document.getElementById('reportCustomCatInput').value.trim() || 'Evento Straordinario';
         const punti = parseInt(document.getElementById('reportPuntiInput').value, 10) || 20;
-        const fotoUrl = document.getElementById('reportFotoUrlInput').value.trim();
+        const fotoUrlInput = document.getElementById('reportFotoUrlInput');
+        const fotoUrl = fotoUrlInput ? fotoUrlInput.value.trim() : '';
+        const fotoFinal = this.reportUploadedPhoto || fotoUrl || null;
 
         if (!this._selectedReportCharIds || this._selectedReportCharIds.length === 0) {
           this.showToast("⚠️ Seleziona almeno un personaggio coinvolto!", "danger");
@@ -2632,7 +2733,7 @@ class FantaApp {
           punti,
           autore: this.currentUser.username,
           data: new Date().toLocaleDateString('it-IT') + ' ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
-          foto: fotoUrl,
+          foto: fotoFinal,
           stato: 'in_attesa',
           upvotes: 1,
           downvotes: 0,
@@ -2642,14 +2743,348 @@ class FantaApp {
 
         reports.unshift(newRep);
         this.saveData('fanta_reports', reports);
+        this._prevReportsSnapshot = JSON.parse(JSON.stringify(reports));
 
         this.playSound('success');
         this.closeAllModals();
         form.reset();
+        this.removeReportPhotoUpload();
         this._selectedReportCharIds = [];
         this.showToast("🚀 Segnalazione inviata con successo! In attesa di approvazione Master.", "success");
         this.switchTab('social');
       });
+    }
+  }
+
+  // --- CARICAMENTO FOTO DA GALLERIA O FOTOCAMERA ---
+  handleReportPhotoUpload(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      this.showToast("⚠️ Seleziona un file immagine valido!", "danger");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const img = new Image();
+      img.onload = () => {
+        // Ridimensionamento su Canvas per leggerezza (max 800px width/height, JPEG 0.8)
+        const maxDim = 800;
+        let width = img.width;
+        let height = img.height;
+        if (width > maxDim || height > maxDim) {
+          if (width > height) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+        this.reportUploadedPhoto = dataUrl;
+
+        const previewContainer = document.getElementById('reportPhotoPreviewContainer');
+        const previewImg = document.getElementById('reportPhotoPreviewImg');
+        if (previewImg && previewContainer) {
+          previewImg.src = dataUrl;
+          previewContainer.style.display = 'block';
+        }
+        this.playSound('click');
+        this.showToast("📸 Foto caricata con successo!", "success");
+      };
+      img.src = loadEvent.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  removeReportPhotoUpload() {
+    this.reportUploadedPhoto = null;
+    const fileInput = document.getElementById('reportPhotoFileInput');
+    if (fileInput) fileInput.value = '';
+    const previewContainer = document.getElementById('reportPhotoPreviewContainer');
+    const previewImg = document.getElementById('reportPhotoPreviewImg');
+    if (previewContainer) previewContainer.style.display = 'none';
+    if (previewImg) previewImg.src = '';
+  }
+
+  // ============================================================
+  // PWA & SISTEMA NOTIFICHE TELEFONO / BROWSER (100% GRATUITO)
+  // ============================================================
+  initPwa() {
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').then(reg => {
+          console.log('[PWA] Service Worker registrato con successo:', reg.scope);
+        }).catch(err => {
+          console.warn('[PWA] Registrazione Service Worker non riuscita:', err);
+        });
+      });
+    }
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      this.deferredPrompt = e;
+      const pwaBtn = document.getElementById('drawerPwaInstallBtn');
+      if (pwaBtn) pwaBtn.style.display = 'inline-flex';
+    });
+
+    window.addEventListener('appinstalled', () => {
+      this.deferredPrompt = null;
+      const pwaBtn = document.getElementById('drawerPwaInstallBtn');
+      if (pwaBtn) pwaBtn.style.display = 'none';
+      this.showToast("📲 Fanta-Accademia installata nella schermata Home!", "success");
+    });
+  }
+
+  promptPwaInstall() {
+    if (this.deferredPrompt) {
+      this.deferredPrompt.prompt();
+      this.deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          this.showToast("📲 Fanta-Accademia aggiunta alla schermata Home!", "success");
+        }
+        this.deferredPrompt = null;
+        const pwaBtn = document.getElementById('drawerPwaInstallBtn');
+        if (pwaBtn) pwaBtn.style.display = 'none';
+      });
+    } else {
+      const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+      if (isIos) {
+        this.showToast("📱 Su iPhone: tocca l'icona Condividi in Safari e scegli 'Aggiungi alla schermata Home'.", "info");
+      } else {
+        this.showToast("📱 Apri il menu del browser (3 puntini) e seleziona 'Aggiungi a schermata Home' o 'Installa app'.", "info");
+      }
+    }
+  }
+
+  updateNotificationButtonState() {
+    const btn = document.getElementById('drawerNotifBtn');
+    const icon = document.getElementById('drawerNotifIcon');
+    const label = document.getElementById('drawerNotifLabel');
+    if (!btn || !label) return;
+
+    if (!('Notification' in window)) {
+      label.innerText = 'Notifiche Non Supportate';
+      btn.style.opacity = '0.5';
+      return;
+    }
+
+    if (Notification.permission === 'granted') {
+      if (icon) icon.innerText = '🔔';
+      label.innerText = 'Notifiche Attive';
+      btn.style.borderColor = 'rgba(16, 185, 129, 0.45)';
+      btn.style.color = '#34d399';
+    } else if (Notification.permission === 'denied') {
+      if (icon) icon.innerText = '🔕';
+      label.innerText = 'Notifiche Bloccate';
+      btn.style.borderColor = 'rgba(239, 68, 68, 0.45)';
+      btn.style.color = '#f87171';
+    } else {
+      if (icon) icon.innerText = '🔔';
+      label.innerText = 'Attiva Notifiche Telefono';
+      btn.style.borderColor = 'rgba(139, 92, 246, 0.3)';
+      btn.style.color = 'var(--text-light)';
+    }
+  }
+
+  async toggleNotifications() {
+    if (!('Notification' in window)) {
+      this.showToast("⚠️ Il tuo browser non supporta le notifiche di sistema.", "danger");
+      return;
+    }
+
+    if (Notification.permission === 'granted') {
+      this.showToast("🔔 Le notifiche sono già attive sul tuo dispositivo!", "info");
+      this.sendSystemNotification("🔔 Fanta-Accademia 2026", "Le notifiche sono già configurate e attive!", "./index.html", "test-notif");
+      return;
+    }
+
+    if (Notification.permission === 'denied') {
+      this.showToast("🔕 Le notifiche sono bloccate nelle impostazioni del browser. Abilitale per riceverle.", "danger");
+      return;
+    }
+
+    try {
+      const permission = await Notification.requestPermission();
+      this.updateNotificationButtonState();
+      if (permission === 'granted') {
+        this.playSound('success');
+        this.showToast("✅ Notifiche attivate con successo!", "success");
+        this.sendSystemNotification(
+          "🔔 Fanta-Accademia 2026",
+          "Riceverai notifiche sul telefono per nuove segnalazioni, commenti ed esiti del Master!",
+          "./index.html",
+          "welcome-notif"
+        );
+      } else {
+        this.showToast("⚠️ Permesso notifiche non concesso.", "info");
+      }
+    } catch (e) {
+      console.warn("Errore richiesta permesso notifiche", e);
+    }
+  }
+
+  sendSystemNotification(title, body, url = './index.html', tag = 'fanta') {
+    if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+    const options = {
+      body,
+      icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>",
+      badge: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>",
+      tag: tag || 'fanta-notif-' + Date.now(),
+      renotify: true,
+      data: { url }
+    };
+
+    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+      navigator.serviceWorker.ready.then(reg => {
+        reg.showNotification(title, options);
+      }).catch(() => {
+        try { new Notification(title, options); } catch (e) {}
+      });
+    } else {
+      try { new Notification(title, options); } catch (e) {}
+    }
+  }
+
+  handleFirebaseRealtimeNotification(key, val) {
+    if (!val) return;
+
+    if (key === 'fanta_reports') {
+      if (!this._prevReportsSnapshot) {
+        this._prevReportsSnapshot = JSON.parse(JSON.stringify(val));
+        return;
+      }
+      if (Array.isArray(val)) {
+        // 1. Nuove segnalazioni aggiunte da altri coach
+        val.forEach(rep => {
+          const exists = this._prevReportsSnapshot.some(prev => prev.id === rep.id);
+          if (!exists) {
+            if (rep.autore !== this.currentUser?.username) {
+              this.sendSystemNotification(
+                "📸 Nuova Segnalazione!",
+                `${rep.autore} ha pubblicato: "${rep.titolo}" (${rep.personaggioNome || 'Personaggio'})`,
+                "./index.html#social",
+                "rep-" + rep.id
+              );
+              this.showToast(`📸 Nuova segnalazione pubblicata da <b>${rep.autore}</b>: ${rep.titolo}`, 'info');
+              this.playSound('coin');
+            }
+          }
+        });
+
+        // 2. Modifiche di stato (approvata o rifiutata dal Master)
+        val.forEach(rep => {
+          const old = this._prevReportsSnapshot.find(prev => prev.id === rep.id);
+          if (old && old.stato !== rep.stato) {
+            if (rep.stato === 'approvata') {
+              this.sendSystemNotification(
+                "🎉 Segnalazione Approvata!",
+                `Il Master ha approvato: "${rep.titolo}" (+${rep.punti}pt)`,
+                "./index.html#social",
+                "rep-status-" + rep.id
+              );
+              this.showToast(`🎉 Segnalazione convalidata dal Master: <b>${rep.titolo}</b> (+${rep.punti}pt)`, 'success');
+              this.playSound('bonus');
+            } else if (rep.stato === 'rifiutata') {
+              this.sendSystemNotification(
+                "❌ Segnalazione Non Convalidata",
+                `Il Master ha respinto la segnalazione: "${rep.titolo}"`,
+                "./index.html#social",
+                "rep-status-" + rep.id
+              );
+              this.showToast(`❌ Segnalazione non convalidata: <b>${rep.titolo}</b>`, 'danger');
+              this.playSound('glitch');
+            }
+          }
+
+          // 3. Nuovi commenti su una segnalazione
+          if (old && Array.isArray(rep.commenti)) {
+            const oldCount = Array.isArray(old.commenti) ? old.commenti.length : 0;
+            if (rep.commenti.length > oldCount) {
+              const newComments = rep.commenti.slice(oldCount);
+              newComments.forEach(comm => {
+                if (comm.autore !== this.currentUser?.username) {
+                  this.sendSystemNotification(
+                    "💬 Nuovo Commento!",
+                    `${comm.autore} su "${rep.titolo}": "${comm.testo}"`,
+                    "./index.html#social",
+                    "comment-" + (comm.id || Date.now())
+                  );
+                  this.showToast(`💬 Nuovo commento di <b>${comm.autore}</b> su "${rep.titolo}"`, 'info');
+                  this.playSound('click');
+                }
+              });
+            }
+          }
+        });
+      }
+      this._prevReportsSnapshot = JSON.parse(JSON.stringify(val));
+    }
+
+    if (key === 'fanta_notices') {
+      if (!this._prevNoticesSnapshot) {
+        this._prevNoticesSnapshot = JSON.parse(JSON.stringify(val));
+        return;
+      }
+      if (Array.isArray(val)) {
+        val.forEach(notice => {
+          const exists = this._prevNoticesSnapshot.some(prev => prev.id === notice.id);
+          if (!exists) {
+            // Notifica avvisi diretti del Master (escludendo gli esiti automatici già notificati sopra)
+            if (notice.tipo !== 'RISULTATO SEGNALAZIONE') {
+              this.sendSystemNotification(
+                "📢 Avviso del Master!",
+                `${notice.titolo}: ${notice.testo}`,
+                "./index.html#home",
+                "notice-" + notice.id
+              );
+              this.showToast(`📢 Nuovo avviso in Home: <b>${notice.titolo}</b>`, 'info');
+              this.playSound('coin');
+            }
+          }
+        });
+      }
+      this._prevNoticesSnapshot = JSON.parse(JSON.stringify(val));
+    }
+
+    if (key === 'fanta_tips') {
+      if (!this._prevTipsSnapshot) {
+        this._prevTipsSnapshot = JSON.parse(JSON.stringify(val));
+        return;
+      }
+      if (Array.isArray(val)) {
+        val.forEach(tip => {
+          const exists = this._prevTipsSnapshot.some(prev => prev.id === tip.id);
+          if (!exists) {
+            // Notifica SOLO a chi ha Martina in squadra (Masi, Mar) oppure Master
+            const teams = this.getData('fanta_teams') || {};
+            const myTeam = this.currentUser ? teams[this.currentUser.username] : null;
+            const hasMartina = myTeam && myTeam.confirmed && myTeam.collega === 'collega-martina';
+            const isMaster = this.currentUser && this.currentUser.role === 'master';
+
+            if (hasMartina || isMaster) {
+              this.sendSystemNotification(
+                "👑 Nuova Soffiata del Master!",
+                `Nuovo suggerimento segreto per chi ha Martina in squadra: "${tip.titolo}"`,
+                "./index.html#soffiate",
+                "tip-" + tip.id
+              );
+              this.showToast(`👑 Nuova Soffiata del Master: <b>${tip.titolo}</b>`, 'bonus');
+              this.playSound('bonus');
+            }
+          }
+        });
+      }
+      this._prevTipsSnapshot = JSON.parse(JSON.stringify(val));
     }
   }
 
@@ -2723,6 +3158,7 @@ class FantaApp {
           testo: `${desc} — ${punti >= 0 ? '+' : ''}${punti} pt accreditati a tutte le squadre che schierano ${charObj.nome}.`
         });
         this.saveData('fanta_notices', notices);
+        this._prevNoticesSnapshot = JSON.parse(JSON.stringify(notices));
 
         this.playSound(punti >= 0 ? 'success' : 'glitch');
         form.reset();
@@ -2759,6 +3195,7 @@ class FantaApp {
         });
 
         this.saveData('fanta_notices', notices);
+        this._prevNoticesSnapshot = JSON.parse(JSON.stringify(notices));
         this.playSound('success');
         this.showToast("📢 Avviso pubblicato in Home!", "success");
         form.reset();
@@ -2786,6 +3223,7 @@ class FantaApp {
         });
 
         this.saveData('fanta_tips', tips);
+        this._prevTipsSnapshot = JSON.parse(JSON.stringify(tips));
         this.playSound('success');
         this.showToast("👑 Soffiata Master aggiunta!", "success");
         form.reset();

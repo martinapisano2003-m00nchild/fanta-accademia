@@ -7,6 +7,14 @@
   <meta name="description" content="Il gioco goliardico definitivo sulla vita universitaria e accademica. Schiera i tuoi docenti e colleghi preferiti, accumula CFA e scala la classifica!">
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%22><text y=%2226%22 font-size=%2226%22>🏛️</text></svg>">
+
+  <!-- PWA & Mobile App Support -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0c0919">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FantaAccademia">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect width=%22100%22 height=%22100%22 rx=%2222%22 fill=%22%230c0919%22/><text x=%2250%%22 y=%2255%%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 font-size=%2265%22>🏛️</text></svg>">
 </head>
 <body>
 
@@ -39,47 +47,118 @@
   </div>
 
   <!-- ============================================================
-       DECORAZIONI HALLOWEEN (Ragnatele, Pipistrelli e Zucche - Non interattive)
+       LEFT DRAWER NAVIGATION MENU (A TENDINA SUL LATO SINISTRO)
        ============================================================ -->
-  <div class="halloween-decorations" aria-hidden="true">
-    <div class="halloween-web web-top-left">
-      <svg viewBox="0 0 100 100" class="web-svg">
-        <path d="M0,0 L100,0 C70,10 40,40 0,100 Z" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.2"/>
-        <path d="M0,0 L75,0 C52,15 28,45 0,75 Z" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>
-        <path d="M0,0 L50,0 C35,20 18,40 0,50 Z" fill="none" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
-        <line x1="0" y1="0" x2="100" y2="0" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
-        <line x1="0" y1="0" x2="0" y2="100" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
-        <line x1="0" y1="0" x2="70" y2="70" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
-        <line x1="0" y1="0" x2="90" y2="35" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>
-        <line x1="0" y1="0" x2="35" y2="90" stroke="rgba(255,255,255,0.14)" stroke-width="1"/>
-      </svg>
-      <div class="halloween-spider">🕷️</div>
+  <div id="drawerOverlay" class="drawer-overlay" onclick="app.closeDrawer()" aria-hidden="true"></div>
+  <aside id="appDrawer" class="app-drawer" aria-label="Menu Principale">
+    <div class="drawer-header">
+      <div class="drawer-brand">
+        <span class="drawer-logo">🏛️</span>
+        <div class="drawer-titles">
+          <h3>FANTA-ACCADEMIA</h3>
+          <span>Menu Ufficiale</span>
+        </div>
+      </div>
+      <button type="button" class="drawer-close-btn" onclick="app.closeDrawer()" aria-label="Chiudi menu">✕</button>
     </div>
-    <div class="halloween-web web-top-right">
-      <svg viewBox="0 0 100 100" class="web-svg">
-        <path d="M100,0 L0,0 C30,10 60,40 100,100 Z" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="1.2"/>
-        <path d="M100,0 L25,0 C48,15 72,45 100,75 Z" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="1"/>
-        <line x1="100" y1="0" x2="0" y2="0" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
-        <line x1="100" y1="0" x2="100" y2="100" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
-        <line x1="100" y1="0" x2="30" y2="70" stroke="rgba(255,255,255,0.18)" stroke-width="1"/>
-      </svg>
+
+    <nav class="drawer-nav-list">
+      <!-- 1. Home & Avvisi -->
+      <button type="button" class="drawer-nav-item active" data-tab="home" onclick="app.switchTab('home'); app.closeDrawer();">
+        <span class="drawer-item-icon">🏠</span>
+        <span class="drawer-item-label">Home & Avvisi</span>
+      </button>
+
+      <!-- 2. Classifica Live -->
+      <button type="button" class="drawer-nav-item" data-tab="classifica" onclick="app.switchTab('classifica'); app.closeDrawer();">
+        <span class="drawer-item-icon">🏆</span>
+        <span class="drawer-item-label">Classifica Live</span>
+      </button>
+
+      <!-- 3. Evento (bloccato) -->
+      <button type="button" class="drawer-nav-item locked-nav" data-tab="evento" onclick="app.switchTab('evento'); app.closeDrawer();">
+        <span class="drawer-item-icon">🎪</span>
+        <span class="drawer-item-label">Evento</span>
+        <span class="drawer-badge-lock">🔒 Bloccato</span>
+      </button>
+
+      <!-- 4. Bacheca Social -->
+      <button type="button" class="drawer-nav-item" data-tab="social" onclick="app.switchTab('social'); app.closeDrawer();">
+        <span class="drawer-item-icon">📸</span>
+        <span class="drawer-item-label">Bacheca Social</span>
+      </button>
+
+      <!-- 5. Regolamento -->
+      <button type="button" class="drawer-nav-item" data-tab="regolamento" onclick="app.switchTab('regolamento'); app.closeDrawer();">
+        <span class="drawer-item-icon">📜</span>
+        <span class="drawer-item-label">Regolamento</span>
+      </button>
+
+      <!-- 6. La mia squadra -->
+      <button type="button" class="drawer-nav-item" data-tab="squadra" onclick="app.switchTab('squadra'); app.closeDrawer();">
+        <span class="drawer-item-icon">⚽</span>
+        <span class="drawer-item-label">La mia squadra</span>
+      </button>
+
+      <!-- 7. Secret Rules -->
+      <button type="button" class="drawer-nav-item" data-tab="secret" onclick="app.switchTab('secret'); app.closeDrawer();">
+        <span class="drawer-item-icon">🕵️</span>
+        <span class="drawer-item-label">Secret Rules</span>
+        <span class="drawer-badge-pill">Classificato</span>
+      </button>
+
+      <!-- 8. Personaggi & CFA -->
+      <button type="button" class="drawer-nav-item" data-tab="personaggi" onclick="app.switchTab('personaggi'); app.closeDrawer();">
+        <span class="drawer-item-icon">👥</span>
+        <span class="drawer-item-label">Personaggi & CFA</span>
+      </button>
+
+      <!-- 9. Soffiate Master (visibile SOLO a chi ha Martina in squadra: Masi, Mar, e Master) -->
+      <button type="button" class="drawer-nav-item nav-soffiate-only" data-tab="soffiate" style="display: none;" onclick="app.switchTab('soffiate'); app.closeDrawer();">
+        <span class="drawer-item-icon">👑</span>
+        <span class="drawer-item-label">Soffiate Master</span>
+        <span class="drawer-badge-gold">Esclusivo</span>
+      </button>
+
+      <!-- 10. Pannello Master (visibile SOLO a Martina) -->
+      <button type="button" class="drawer-nav-item nav-master-only" data-tab="master" style="display: none;" onclick="app.switchTab('master'); app.closeDrawer();">
+        <span class="drawer-item-icon">⚡</span>
+        <span class="drawer-item-label">Pannello Master</span>
+        <span class="drawer-badge-gold">ADMIN</span>
+      </button>
+    </nav>
+
+    <div class="drawer-footer">
+      <button type="button" class="drawer-footer-btn" id="drawerNotifBtn" onclick="app.toggleNotifications()">
+        <span id="drawerNotifIcon">🔔</span>
+        <span id="drawerNotifLabel">Notifiche Telefono</span>
+      </button>
+      <button type="button" class="drawer-footer-btn" id="drawerPwaInstallBtn" onclick="app.promptPwaInstall()" style="display: none;">
+        <span>📲 Aggiungi alla Home</span>
+      </button>
     </div>
-    <div class="halloween-bat bat-1">🦇</div>
-    <div class="halloween-bat bat-2">🦇</div>
-    <div class="halloween-bat bat-3">🦇</div>
-    <div class="halloween-pumpkin-ambient pumpkin-left">🎃</div>
-    <div class="halloween-pumpkin-ambient pumpkin-right">🎃</div>
-  </div>
+  </aside>
 
   <!-- ============================================================
-       TOP HEADER
+       TOP HEADER (CON PULSANTE MENU HAMBURGER A SINISTRA)
        ============================================================ -->
   <header class="app-header">
-    <div class="header-brand" onclick="app.switchTab('home')">
-      <div class="brand-logo">🏛️</div>
-      <div class="brand-text">
-        <h1>FANTA-ACCADEMIA</h1>
-        <span>Edizione 2026</span>
+    <div class="header-left-group">
+      <button type="button" class="drawer-toggle-btn" id="drawerToggleBtn" aria-label="Apri menu" onclick="app.toggleDrawer()">
+        <span class="drawer-hamburger">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+        <span class="drawer-toggle-label">Menu</span>
+      </button>
+
+      <div class="header-brand" onclick="app.switchTab('home')">
+        <div class="brand-logo">🏛️</div>
+        <div class="brand-text">
+          <h1>FANTA-ACCADEMIA</h1>
+          <span>Edizione 2026</span>
+        </div>
       </div>
     </div>
 
@@ -101,55 +180,15 @@
   </header>
 
   <!-- ============================================================
-       DESKTOP NAVIGATION BAR
+       SEASON BANNER (EDIZIONE 2026 IN CORSO)
        ============================================================ -->
-  <nav class="desktop-nav">
-    <button class="nav-tab-btn active" data-tab="home">
-      <span>🏠 Home & Avvisi</span>
-    </button>
-    <button class="nav-tab-btn" data-tab="squadra">
-      <span>⚽ La Mia Squadra</span>
-    </button>
-    <button class="nav-tab-btn" data-tab="classifica">
-      <span>🏆 Classifica Live</span>
-    </button>
-    <button class="nav-tab-btn" data-tab="evento">
-      <span>🎃 Evento</span>
-      <span class="nav-badge-pill" style="background: rgba(249, 115, 22, 0.25); border-color: rgba(249, 115, 22, 0.6); color: #fb923c;">30-31 Ott</span>
-    </button>
-    <button class="nav-tab-btn" data-tab="personaggi">
-      <span>👥 Personaggi & CFA</span>
-    </button>
-    <button class="nav-tab-btn" data-tab="regolamento">
-      <span>📜 Regolamento</span>
-    </button>
-    <button class="nav-tab-btn" data-tab="secret">
-      <span>🕵️ Secret Rules</span>
-      <span class="nav-badge-pill">Classificato</span>
-    </button>
-    <button class="nav-tab-btn" data-tab="social">
-      <span>📸 Bacheca Social</span>
-    </button>
-    <button class="nav-tab-btn" data-tab="soffiate">
-      <span>👑 Soffiate Master</span>
-      <span class="nav-badge-gold">Esclusivo</span>
-    </button>
-    <button class="nav-tab-btn nav-master-only" data-tab="master" style="display: none;">
-      <span>⚡ Pannello Master</span>
-      <span class="nav-badge-gold">ADMIN</span>
-    </button>
-  </nav>
-
-  <!-- ============================================================
-       SEASON BANNER (EVENTO HALLOWEEN — 30 E 31 OTTOBRE 2026)
-       ============================================================ -->
-  <div class="season-active-banner halloween-banner-theme">
+  <div class="season-active-banner">
     <div class="season-banner-inner">
-      <span class="season-banner-icon">🎃</span>
+      <span class="season-banner-icon">🏛️</span>
       <span class="season-banner-text">
-        <strong>Evento Halloween</strong> — 30 e 31 Ottobre 2026
+        <strong>Edizione Primo Semestre 2026</strong> in corso — Segui la classifica live e la bacheca social!
       </span>
-      <span class="season-banner-badge" style="background: rgba(249, 115, 22, 0.25); border-color: rgba(249, 115, 22, 0.6); color: #fb923c;">🎃 LIVE</span>
+      <span class="season-banner-badge">🏆 IN CORSO</span>
     </div>
   </div>
 
@@ -606,48 +645,6 @@
   </main>
 
   <!-- ============================================================
-       MOBILE BOTTOM NAVIGATION BAR
-       ============================================================ -->
-  <nav class="mobile-nav-bar">
-    <button class="mobile-nav-item active" data-tab="home">
-      <span class="icon">🏠</span>
-      <span class="label">Home</span>
-    </button>
-    <button class="mobile-nav-item" data-tab="squadra">
-      <span class="icon">⚽</span>
-      <span class="label">Squadra</span>
-    </button>
-    <button class="mobile-nav-item" data-tab="classifica">
-      <span class="icon">🏆</span>
-      <span class="label">Classifica</span>
-    </button>
-    <button class="mobile-nav-item" data-tab="evento">
-      <span class="icon">🎃</span>
-      <span class="label">Evento</span>
-    </button>
-    <button class="mobile-nav-item" data-tab="personaggi">
-      <span class="icon">👥</span>
-      <span class="label">Personaggi</span>
-    </button>
-    <button class="mobile-nav-item" data-tab="regolamento">
-      <span class="icon">📜</span>
-      <span class="label">Regole</span>
-    </button>
-    <button class="mobile-nav-item" data-tab="secret">
-      <span class="icon">🕵️</span>
-      <span class="label">Secret</span>
-    </button>
-    <button class="mobile-nav-item" data-tab="social">
-      <span class="icon">📸</span>
-      <span class="label">Bacheca</span>
-    </button>
-    <button class="mobile-nav-item nav-master-only" data-tab="master" style="display: none;">
-      <span class="icon">👑</span>
-      <span class="label">Master</span>
-    </button>
-  </nav>
-
-  <!-- ============================================================
        MODAL: LOGIN PROFILO ALLENATORE (SOLO NOME UTENTE E PASSWORD)
        ============================================================ -->
   <div id="loginModal" class="modal-overlay">
@@ -725,8 +722,20 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">URL Foto / Prova (Opzionale)</label>
-          <input type="url" id="reportFotoUrlInput" class="form-control" placeholder="https://esempio.com/foto-prova.jpg">
+          <label class="form-label">Foto / Prova Visiva (Dalla Galleria o URL)</label>
+          <div class="report-photo-upload-row">
+            <label class="btn-upload-file" style="cursor: pointer;">
+              📷 Carica da Galleria / Scatta
+              <input type="file" id="reportPhotoFileInput" accept="image/*" style="display: none;" onchange="app.handleReportPhotoUpload(event)">
+            </label>
+            <span style="font-size: 0.8rem; color: var(--text-dark);">oppure</span>
+            <input type="url" id="reportFotoUrlInput" class="form-control" placeholder="Incolla link URL foto..." style="flex: 1; min-width: 170px;">
+          </div>
+          <!-- Box anteprima foto caricata -->
+          <div id="reportPhotoPreviewContainer" style="display: none; margin-top: 10px; position: relative; width: fit-content;">
+            <img id="reportPhotoPreviewImg" src="" alt="Anteprima Prova" style="max-height: 160px; max-width: 100%; border-radius: 10px; border: 1.5px solid var(--primary); object-fit: cover;">
+            <button type="button" onclick="app.removeReportPhotoUpload()" title="Rimuovi foto" style="position: absolute; top: -8px; right: -8px; background: #ef4444; color: #fff; border: none; border-radius: 50%; width: 24px; height: 24px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(0,0,0,0.6);">✕</button>
+          </div>
         </div>
 
         <button type="submit" class="btn-confirm-squad" style="padding: 12px;">
