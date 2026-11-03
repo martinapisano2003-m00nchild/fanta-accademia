@@ -2852,16 +2852,9 @@ class FantaApp {
           this.showToast("📲 Fanta-Accademia aggiunta alla schermata Home!", "success");
         }
         this.deferredPrompt = null;
-        const pwaBtn = document.getElementById('drawerPwaInstallBtn');
-        if (pwaBtn) pwaBtn.style.display = 'none';
       });
     } else {
-      const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
-      if (isIos) {
-        this.showToast("📱 Su iPhone: tocca l'icona Condividi in Safari e scegli 'Aggiungi alla schermata Home'.", "info");
-      } else {
-        this.showToast("📱 Apri il menu del browser (3 puntini) e seleziona 'Aggiungi a schermata Home' o 'Installa app'.", "info");
-      }
+      this.openModal('pwaInstallModal');
     }
   }
 
@@ -2871,9 +2864,14 @@ class FantaApp {
     const label = document.getElementById('drawerNotifLabel');
     if (!btn || !label) return;
 
+    btn.style.opacity = '1';
+
     if (!('Notification' in window)) {
-      label.innerText = 'Notifiche Non Supportate';
-      btn.style.opacity = '0.5';
+      const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+      if (icon) icon.innerText = '📲';
+      label.innerText = isIos ? 'Installa per Notifiche' : 'Guida Notifiche Telefono';
+      btn.style.borderColor = 'rgba(245, 158, 11, 0.45)';
+      btn.style.color = '#fbbf24';
       return;
     }
 
@@ -2884,20 +2882,20 @@ class FantaApp {
       btn.style.color = '#34d399';
     } else if (Notification.permission === 'denied') {
       if (icon) icon.innerText = '🔕';
-      label.innerText = 'Notifiche Bloccate';
+      label.innerText = 'Notifiche Bloccate (Guida)';
       btn.style.borderColor = 'rgba(239, 68, 68, 0.45)';
       btn.style.color = '#f87171';
     } else {
       if (icon) icon.innerText = '🔔';
       label.innerText = 'Attiva Notifiche Telefono';
-      btn.style.borderColor = 'rgba(139, 92, 246, 0.3)';
+      btn.style.borderColor = 'rgba(139, 92, 246, 0.35)';
       btn.style.color = 'var(--text-light)';
     }
   }
 
   async toggleNotifications() {
     if (!('Notification' in window)) {
-      this.showToast("⚠️ Il tuo browser non supporta le notifiche di sistema.", "danger");
+      this.openModal('pwaInstallModal');
       return;
     }
 
@@ -2908,7 +2906,8 @@ class FantaApp {
     }
 
     if (Notification.permission === 'denied') {
-      this.showToast("🔕 Le notifiche sono bloccate nelle impostazioni del browser. Abilitale per riceverle.", "danger");
+      this.openModal('pwaInstallModal');
+      this.showToast("🔕 Le notifiche sono bloccate nel browser. Consulta la guida per sbloccarle.", "danger");
       return;
     }
 
@@ -2925,10 +2924,12 @@ class FantaApp {
           "welcome-notif"
         );
       } else {
-        this.showToast("⚠️ Permesso notifiche non concesso.", "info");
+        this.showToast("⚠️ Permesso notifiche non concesso. Apri la guida per info.", "info");
+        this.openModal('pwaInstallModal');
       }
     } catch (e) {
       console.warn("Errore richiesta permesso notifiche", e);
+      this.openModal('pwaInstallModal');
     }
   }
 

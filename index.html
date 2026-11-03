@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Fanta-Accademia 2026</title>
   <meta name="description" content="Il gioco goliardico definitivo sulla vita universitaria e accademica. Schiera i tuoi docenti e colleghi preferiti, accumula CFA e scala la classifica!">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="styles.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%22><text y=%2226%22 font-size=%2226%22>🏛️</text></svg>">
 
@@ -133,8 +135,8 @@
         <span id="drawerNotifIcon">🔔</span>
         <span id="drawerNotifLabel">Notifiche Telefono</span>
       </button>
-      <button type="button" class="drawer-footer-btn" id="drawerPwaInstallBtn" onclick="app.promptPwaInstall()" style="display: none;">
-        <span>📲 Aggiungi alla Home</span>
+      <button type="button" class="drawer-footer-btn" id="drawerPwaInstallBtn" onclick="app.promptPwaInstall()">
+        <span>📲 Guida Notifiche & Installazione</span>
       </button>
     </div>
   </aside>
@@ -762,6 +764,61 @@
     <div class="modal-content" style="max-width: 540px;">
       <button class="modal-close-btn" data-close-modal>✕</button>
       <div id="profileModalBody"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MODAL: GUIDA ATTIVAZIONE NOTIFICHE & INSTALLAZIONE SMARTPHONE
+       ============================================================ -->
+  <div id="pwaInstallModal" class="modal-overlay">
+    <div class="modal-content" style="max-width: 540px; padding: 26px 22px;">
+      <button class="modal-close-btn" data-close-modal>✕</button>
+      <div style="text-align: center; margin-bottom: 22px;">
+        <div style="font-size: 3rem; margin-bottom: 8px;">📲🔔</div>
+        <h3 style="color: #fff; font-size: 1.35rem; font-weight: 800; margin-bottom: 6px;">
+          Notifiche sullo Smartphone
+        </h3>
+        <p style="color: var(--text-muted); font-size: 0.88rem; line-height: 1.5;">
+          Per ricevere gli avvisi del Master, i risultati e le segnalazioni direttamente sul telefono, segui questi passaggi rapidi in base al tuo dispositivo:
+        </p>
+      </div>
+
+      <!-- Scheda iPhone (iOS) -->
+      <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; padding: 16px; margin-bottom: 14px;">
+        <h4 style="color: #67e8f9; font-size: 1rem; font-weight: 800; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+          <span>🍎</span> Se usi iPhone o iPad (Safari)
+        </h4>
+        <p style="color: #fde68a; font-size: 0.82rem; margin-bottom: 10px; line-height: 1.4;">
+          ⚠️ <b>Regola di sicurezza Apple</b>: Su iPhone le notifiche web sono bloccate dentro Safari. Si attivano <u>solo</u> se aggiungi l'app alla schermata Home:
+        </p>
+        <ol style="color: var(--text-light); font-size: 0.86rem; line-height: 1.6; padding-left: 20px; margin: 0;">
+          <li>Apri il sito del Fanta-Accademia in <b>Safari</b>.</li>
+          <li>Tocca in basso al centro l'icona <b>Condividi</b> (il quadrato con la freccia verso l'alto 📤).</li>
+          <li>Scorri il menu verso il basso e tocca <b>"Aggiungi alla schermata Home"</b> (➕).</li>
+          <li>Tocca <b>Aggiungi</b> in alto a destra.</li>
+          <li><b>Chiudi Safari e tocca la nuova icona 🏛️ creata sulla schermata Home</b> per aprire l'app a schermo intero.</li>
+          <li>Apri il menu ☰, tocca <b>"Attiva Notifiche Telefono"</b> e premi <b>Consenti</b>!</li>
+        </ol>
+      </div>
+
+      <!-- Scheda Android -->
+      <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+        <h4 style="color: #34d399; font-size: 1rem; font-weight: 800; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+          <span>🤖</span> Se usi Android (Google Chrome)
+        </h4>
+        <ol style="color: var(--text-light); font-size: 0.86rem; line-height: 1.6; padding-left: 20px; margin: 0;">
+          <li>Apri il sito in <b>Google Chrome</b>.</li>
+          <li>Tocca i <b>tre puntini (⋮)</b> in alto a destra e tocca <b>"Installa app"</b> o <b>"Aggiungi a schermata Home"</b>.</li>
+          <li>Apri il menu ☰ in alto a sinistra e tocca <b>"Attiva Notifiche Telefono"</b>.</li>
+          <li>Quando il browser chiede il permesso, tocca <b>Consenti</b>.</li>
+        </ol>
+      </div>
+
+      <div style="text-align: center;">
+        <button type="button" class="btn-confirm-squad" style="width: auto; padding: 10px 28px; margin: 0 auto;" onclick="app.closeAllModals()">
+          Perfetto, Ho Capito!
+        </button>
+      </div>
     </div>
   </div>
 

@@ -2,7 +2,7 @@
    FANTA-ACCADEMIA 2026 - GAMING & CYBER-ACADEMIC DARK THEME
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;0,9..40,800;1,9..40,400&family=Outfit:wght@400;500;600;700;800;900&family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&family=Plus+Jakarta+Sans:ital,wght@0,400..800;1,400..800&family=JetBrains+Mono:wght@400;500;700&display=swap');
 
 :root {
   --bg-main: #0c0919;
@@ -61,7 +61,7 @@
 }
 
 body {
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: var(--bg-main);
   background-image: 
     radial-gradient(circle at 15% 10%, var(--glow-1, rgba(139, 92, 246, 0.18)) 0%, transparent 45%),
@@ -76,8 +76,8 @@ body {
   transition: background-color 0.4s ease;
 }
 
-h1, h2, h3, h4, .hero-title, .section-title, .brand-text h1, .drawer-titles h3 {
-  font-family: 'Syne', 'Outfit', sans-serif;
+h1, h2, h3, h4, .hero-title, .section-title, .brand-text h1, .drawer-titles h3, .gate-title {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   letter-spacing: -0.02em;
 }
 
@@ -181,7 +181,7 @@ h1, h2, h3, h4, .hero-title, .section-title, .brand-text h1, .drawer-titles h3 {
 }
 
 .gate-title {
-  font-family: 'Syne', 'Outfit', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   font-size: 1.75rem;
   letter-spacing: 0.5px;
   font-weight: 800;
@@ -303,7 +303,7 @@ h1, h2, h3, h4, .hero-title, .section-title, .brand-text h1, .drawer-titles h3 {
 }
 
 .brand-text h1 {
-  font-family: 'Syne', 'Outfit', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: 0.5px;
@@ -446,7 +446,7 @@ h1, h2, h3, h4, .hero-title, .section-title, .brand-text h1, .drawer-titles h3 {
   padding: 8px 13px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
   font-size: 0.88rem;
   font-weight: 700;
   transition: all 0.2s ease;
@@ -559,7 +559,7 @@ body.drawer-open {
 }
 
 .drawer-titles h3 {
-  font-family: 'Syne', 'Outfit', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   font-size: 1.15rem;
   font-weight: 800;
   letter-spacing: 0.5px;
@@ -1040,7 +1040,7 @@ body.drawer-open {
 }
 
 .hero-title {
-  font-family: 'Syne', 'Outfit', sans-serif;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
   font-size: 1.5rem;
   font-weight: 800;
   color: #fff;
