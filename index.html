@@ -65,68 +65,60 @@
     </div>
 
     <nav class="drawer-nav-list">
-      <!-- 1. Home & Avvisi -->
-      <button type="button" class="drawer-nav-item active" data-tab="home" onclick="app.switchTab('home'); app.closeDrawer();">
-        <span class="drawer-item-icon">🏠</span>
-        <span class="drawer-item-label">Home & Avvisi</span>
-      </button>
+      <div class="drawer-section-label">SEZIONI SQUADRA & REGOLAMENTO</div>
 
-      <!-- 2. Classifica Live -->
-      <button type="button" class="drawer-nav-item" data-tab="classifica" onclick="app.switchTab('classifica'); app.closeDrawer();">
-        <span class="drawer-item-icon">🏆</span>
-        <span class="drawer-item-label">Classifica Live</span>
-      </button>
-
-      <!-- 3. Evento (bloccato) -->
-      <button type="button" class="drawer-nav-item locked-nav" data-tab="evento" onclick="app.switchTab('evento'); app.closeDrawer();">
-        <span class="drawer-item-icon">🎪</span>
-        <span class="drawer-item-label">Evento</span>
-        <span class="drawer-badge-lock">🔒 Bloccato</span>
-      </button>
-
-      <!-- 4. Bacheca Social -->
-      <button type="button" class="drawer-nav-item" data-tab="social" onclick="app.switchTab('social'); app.closeDrawer();">
-        <span class="drawer-item-icon">📸</span>
-        <span class="drawer-item-label">Bacheca Social</span>
-      </button>
-
-      <!-- 5. Regolamento -->
-      <button type="button" class="drawer-nav-item" data-tab="regolamento" onclick="app.switchTab('regolamento'); app.closeDrawer();">
-        <span class="drawer-item-icon">📜</span>
-        <span class="drawer-item-label">Regolamento</span>
-      </button>
-
-      <!-- 6. La mia squadra -->
+      <!-- 1. La mia squadra -->
       <button type="button" class="drawer-nav-item" data-tab="squadra" onclick="app.switchTab('squadra'); app.closeDrawer();">
         <span class="drawer-item-icon">⚽</span>
         <span class="drawer-item-label">La mia squadra</span>
       </button>
 
-      <!-- 7. Secret Rules -->
+      <!-- 2. Regolamento -->
+      <button type="button" class="drawer-nav-item" data-tab="regolamento" onclick="app.switchTab('regolamento'); app.closeDrawer();">
+        <span class="drawer-item-icon">📜</span>
+        <span class="drawer-item-label">Regolamento</span>
+      </button>
+
+      <!-- 3. Secret Rules -->
       <button type="button" class="drawer-nav-item" data-tab="secret" onclick="app.switchTab('secret'); app.closeDrawer();">
         <span class="drawer-item-icon">🕵️</span>
         <span class="drawer-item-label">Secret Rules</span>
         <span class="drawer-badge-pill">Classificato</span>
       </button>
 
-      <!-- 8. Personaggi & CFA -->
+      <!-- 4. Personaggi & CFA -->
       <button type="button" class="drawer-nav-item" data-tab="personaggi" onclick="app.switchTab('personaggi'); app.closeDrawer();">
         <span class="drawer-item-icon">👥</span>
         <span class="drawer-item-label">Personaggi & CFA</span>
       </button>
 
-      <!-- 9. Soffiate Master (visibile SOLO a chi ha Martina in squadra: Masi, Mar, e Master) -->
+      <!-- 5. Soffiate Master (visibile SOLO a chi ha Martina in squadra: Masi, Mar, e Master) -->
       <button type="button" class="drawer-nav-item nav-soffiate-only" data-tab="soffiate" style="display: none;" onclick="app.switchTab('soffiate'); app.closeDrawer();">
         <span class="drawer-item-icon">👑</span>
         <span class="drawer-item-label">Soffiate Master</span>
         <span class="drawer-badge-gold">Esclusivo</span>
       </button>
 
-      <!-- 10. Pannello Master (visibile SOLO a Martina) -->
+      <!-- 6. Pannello Master (visibile SOLO a Martina) -->
       <button type="button" class="drawer-nav-item nav-master-only" data-tab="master" style="display: none;" onclick="app.switchTab('master'); app.closeDrawer();">
         <span class="drawer-item-icon">⚡</span>
         <span class="drawer-item-label">Pannello Master</span>
         <span class="drawer-badge-gold">ADMIN</span>
+      </button>
+
+      <div class="drawer-section-label" style="margin-top: 14px;">ACCOUNT & PREFERENZE</div>
+
+      <!-- 7. Profilo & Personalizzazione Grafica (Spostato qui) -->
+      <button type="button" class="drawer-nav-item" id="drawerProfileItem" onclick="app.openProfileModal(); app.closeDrawer();">
+        <span class="drawer-item-icon">🎨</span>
+        <span class="drawer-item-label">Profilo & Personalizzazione</span>
+        <span class="drawer-badge-pill" style="background: rgba(139, 92, 246, 0.2); border-color: var(--primary); color: var(--primary-light);">Tema</span>
+      </button>
+
+      <!-- 8. Esci (Spostato qui) -->
+      <button type="button" class="drawer-nav-item drawer-logout-item" id="logoutBtn" style="display: none; color: #fca5a5;" onclick="app.logout(); app.closeDrawer();">
+        <span class="drawer-item-icon">🚪</span>
+        <span class="drawer-item-label">Esci</span>
       </button>
     </nav>
 
@@ -167,19 +159,42 @@
     <div class="header-right">
       <button class="user-badge-btn" id="userBadgeBtn" title="Gestisci Profilo">
         <span class="user-badge-avatar" id="headerUserAvatar">👤</span>
-        <span class="user-badge-name" id="headerUserName">Accedi</span>
-        <span class="user-badge-role" id="headerUserRole">Allenatore</span>
-      </button>
-
-      <button type="button" class="btn-logout" id="logoutBtn" style="display: none;" title="Disconnettiti dal profilo">
-        <span>Esci</span>
-        <span>🚪</span>
+        <span class="user-badge-name" id="headerUserName" style="display: none;">Accedi</span>
+        <span class="user-badge-role" id="headerUserRole" style="display: none;">Allenatore</span>
       </button>
 
       <button class="icon-btn" id="soundToggleBtn" title="Attiva/Disattiva Suoni">🔊</button>
       <button class="icon-btn" onclick="app.lockGatekeeper()" title="Blocca Sito (Schermata Password)">🔒</button>
     </div>
   </header>
+
+  <!-- ============================================================
+       DESKTOP TOP NAVIGATION BAR (SOLO 4 VOCI PRINCIPALI SU PC)
+       ============================================================ -->
+  <nav class="desktop-nav" aria-label="Navigazione Principale Desktop">
+    <div class="desktop-nav-inner">
+      <button type="button" class="nav-item active" data-tab="home" onclick="app.switchTab('home')">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-label">Home & Avvisi</span>
+      </button>
+
+      <button type="button" class="nav-item" data-tab="classifica" onclick="app.switchTab('classifica')">
+        <span class="nav-icon">🏆</span>
+        <span class="nav-label">Classifica Live</span>
+      </button>
+
+      <button type="button" class="nav-item" data-tab="social" onclick="app.switchTab('social')">
+        <span class="nav-icon">📸</span>
+        <span class="nav-label">Bacheca Social</span>
+      </button>
+
+      <button type="button" class="nav-item locked-nav" data-tab="evento" onclick="app.switchTab('evento')">
+        <span class="nav-icon">🎪</span>
+        <span class="nav-label">Evento</span>
+        <span class="nav-badge-lock">🔒 Bloccato</span>
+      </button>
+    </div>
+  </nav>
 
   <!-- ============================================================
        SEASON BANNER (EDIZIONE 2026 IN CORSO)
@@ -201,47 +216,70 @@
 
     <!-- 1. TAB: HOME -->
     <section id="tab-home" class="tab-section active">
-      <div class="hero-banner">
-        <div class="hero-tag">✨ Benvenuti all'Accademia delle Belle Arti</div>
-        <h2 class="hero-title">Fanta-Accademia 2026</h2>
-        <p class="hero-desc">
-          Il fanta-campionato goliardico non ufficiale per gli studenti dell'Accademia. Componi la tua squadra con <strong>4 Docenti + 1 Collega</strong> spendendo massimo <strong>100 CFA</strong>, invia le prove delle nefandezze d'aula e conquista la vetta della classifica!
-        </p>
+      <!-- HERO BANNER WIDGET COMPATTO & ESPANDIBILE -->
+      <div class="hero-banner compact" id="heroBanner">
+        <div class="hero-banner-header" onclick="app.toggleHeroBanner()">
+          <div class="hero-header-left">
+            <span class="hero-header-icon">🏛️</span>
+            <div>
+              <h2 class="hero-compact-title">Fanta-Accademia 2026</h2>
+              <span class="hero-compact-sub">Campionato Goliardico d'Aula</span>
+            </div>
+          </div>
 
-        <div class="hero-stats">
-          <div class="stat-pill">
-            <span class="stat-icon">💰</span>
-            <div class="stat-data">
-              <strong>100 CFA</strong>
-              <span>Budget Totale</span>
+          <div class="hero-header-right">
+            <div class="hero-approved-badge" id="heroApprovedCounter" title="Segnalazioni convalidate dal Master">
+              <span class="badge-dot">●</span>
+              <span id="heroApprovedCountText">0 Eventi Approvati</span>
             </div>
+            <button type="button" class="btn-hero-toggle" id="btnHeroToggle" aria-label="Espandi o comprimi introduzione">
+              <span class="hero-toggle-label">Info & Regole</span>
+              <span class="hero-toggle-arrow">▾</span>
+            </button>
           </div>
-          <div class="stat-pill">
-            <span class="stat-icon">👨‍🏫</span>
-            <div class="stat-data">
-              <strong>20 Docenti</strong>
-              <span>Nel Database</span>
+        </div>
+
+        <!-- CONTENUTO COMPLETO (Collassato di Default) -->
+        <div class="hero-banner-body" id="heroBannerBody" style="display: none;">
+          <p class="hero-desc">
+            Il fanta-campionato goliardico non ufficiale per gli studenti dell'Accademia. Componi la tua squadra con <strong>4 Docenti + 1 Collega</strong> spendendo massimo <strong>100 CFA</strong>, invia le prove delle nefandezze d'aula e conquista la vetta della classifica!
+          </p>
+
+          <div class="hero-stats">
+            <div class="stat-pill">
+              <span class="stat-icon">💰</span>
+              <div class="stat-data">
+                <strong>100 CFA</strong>
+                <span>Budget Totale</span>
+              </div>
             </div>
-          </div>
-          <div class="stat-pill">
-            <span class="stat-icon">🎓</span>
-            <div class="stat-data">
-              <strong>11 Allenatori</strong>
-              <span>In Gara</span>
+            <div class="stat-pill">
+              <span class="stat-icon">👨‍🏫</span>
+              <div class="stat-data">
+                <strong>20 Docenti</strong>
+                <span>Nel Database</span>
+              </div>
             </div>
-          </div>
-          <div class="stat-pill">
-            <span class="stat-icon">📋</span>
-            <div class="stat-data">
-              <strong id="statConfirmedTeams">0 / 11</strong>
-              <span>Squadre Confermate</span>
+            <div class="stat-pill">
+              <span class="stat-icon">🎓</span>
+              <div class="stat-data">
+                <strong>11 Allenatori</strong>
+                <span>In Gara</span>
+              </div>
             </div>
-          </div>
-          <div class="stat-pill">
-            <span class="stat-icon">📸</span>
-            <div class="stat-data">
-              <strong id="statApprovedEvents">0</strong>
-              <span>Eventi Approvati</span>
+            <div class="stat-pill">
+              <span class="stat-icon">📋</span>
+              <div class="stat-data">
+                <strong id="statConfirmedTeams">0 / 11</strong>
+                <span>Squadre Confermate</span>
+              </div>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-icon">📸</span>
+              <div class="stat-data">
+                <strong id="statApprovedEvents">0</strong>
+                <span>Eventi Approvati</span>
+              </div>
             </div>
           </div>
         </div>
@@ -355,7 +393,8 @@
         </div>
       </div>
 
-      <div class="card leaderboard-table-card">
+      <!-- VISTA DESKTOP (Tabella Completa per PC >= 768px) -->
+      <div class="card leaderboard-table-card leaderboard-desktop-view">
         <table class="fanta-table">
           <thead>
             <tr>
@@ -370,6 +409,9 @@
           <tbody id="leaderboardBody"></tbody>
         </table>
       </div>
+
+      <!-- VISTA MOBILE (Fisarmonica Compatta Senza Scroll Orizzontale < 768px) -->
+      <div class="leaderboard-mobile-view" id="mobileLeaderboardList"></div>
     </section>
 
     <!-- TAB: EVENTO SPECIALE (HALLOWEEN 2026) -->
@@ -822,11 +864,49 @@
     </div>
   </div>
 
+  <!-- ============================================================
+       MODAL: VISUALIZZATORE FOTO A TUTTO SCHERMO (LIGHTBOX SOCIAL)
+       ============================================================ -->
+  <div id="imageLightboxModal" class="modal-overlay image-lightbox-overlay" onclick="app.closeAllModals()">
+    <div class="lightbox-container" onclick="event.stopPropagation()">
+      <button type="button" class="lightbox-close-btn" data-close-modal aria-label="Chiudi visualizzatore">✕</button>
+      <img id="lightboxImage" src="" alt="Foto Segnalazione a tutto schermo" class="lightbox-img" />
+      <div id="lightboxCaption" class="lightbox-caption"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       MOBILE BOTTOM NAVIGATION BAR (SOLO 4 VOCI PRINCIPALI SU TELEFONO)
+       ============================================================ -->
+  <nav class="mobile-nav-bar" id="mobileNavBar" aria-label="Navigazione Mobile">
+    <button type="button" class="mobile-nav-item active" data-tab="home" onclick="app.switchTab('home')">
+      <span class="mobile-nav-icon">🏠</span>
+      <span class="mobile-nav-label">Home</span>
+    </button>
+
+    <button type="button" class="mobile-nav-item" data-tab="classifica" onclick="app.switchTab('classifica')">
+      <span class="mobile-nav-icon">🏆</span>
+      <span class="mobile-nav-label">Classifica</span>
+    </button>
+
+    <button type="button" class="mobile-nav-item" data-tab="social" onclick="app.switchTab('social')">
+      <span class="mobile-nav-icon">📸</span>
+      <span class="mobile-nav-label">Social</span>
+    </button>
+
+    <button type="button" class="mobile-nav-item locked-nav" data-tab="evento" onclick="app.switchTab('evento')">
+      <span class="mobile-nav-icon">🎪</span>
+      <span class="mobile-nav-label">Evento</span>
+      <span class="mobile-badge-lock">🔒</span>
+    </button>
+  </nav>
+
   <!-- TOAST CONTAINER -->
   <div id="toastContainer"></div>
 
   <!-- FIREBASE COMPAT SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <script>
     // ============================================================
@@ -842,6 +922,7 @@
       appId: "1:226279916275:web:1d11dcf72a999a0a68ad86"
     };
     firebase.initializeApp(firebaseConfig);
+    window.fantaAuth = firebase.auth();
     window.fantaDB = firebase.database();
   </script>
 

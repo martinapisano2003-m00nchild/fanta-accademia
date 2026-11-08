@@ -132,7 +132,28 @@ class FantaApp {
     return ['fanta_teams', 'fanta_notices', 'fanta_reports', 'fanta_tips', 'fanta_profiles'];
   }
 
+  initFirebaseAuth() {
+    if (!window.fantaAuth) return;
+    // Autenticazione anonima silenziosa: protegge il database da accessi esterni non autorizzati
+    window.fantaAuth.onAuthStateChanged(user => {
+      if (user) {
+        console.log('[Firebase Auth] Sessione sicura attiva (UID anonimo):', user.uid);
+      } else {
+        window.fantaAuth.signInAnonymously()
+          .then(cred => {
+            console.log('[Firebase Auth] Accesso anonimo eseguito con successo:', cred.user.uid);
+          })
+          .catch(err => {
+            console.warn('[Firebase Auth] Avviso accesso anonimo:', err);
+          });
+      }
+    });
+  }
+
   initStorage() {
+    // Avvia l'autenticazione anonima sicura
+    this.initFirebaseAuth();
+
     // v4: Firebase è la fonte di verità per le chiavi condivise.
     // NON cancelliamo mai dati esistenti — solo aggiorniamo utenti locali e avviamo i listener.
     // La prima volta che un dispositivo si connette, Firebase popolerà la cache tramite i listener.
@@ -654,6 +675,7 @@ class FantaApp {
     const roleEl = document.getElementById('headerUserRole');
     const avatarEl = document.getElementById('headerUserAvatar');
     const logoutBtn = document.getElementById('logoutBtn');
+    const drawerProfile = document.getElementById('drawerProfileItem');
 
     if (!this.currentUser) {
       if (nameEl) nameEl.innerText = "Accedi";
@@ -663,12 +685,14 @@ class FantaApp {
         roleEl.className = "user-badge-role";
       }
       if (logoutBtn) logoutBtn.style.display = 'none';
+      if (drawerProfile) drawerProfile.style.display = 'none';
       return;
     }
 
-    if (logoutBtn) logoutBtn.style.display = 'inline-flex';
+    if (logoutBtn) logoutBtn.style.display = 'flex';
+    if (drawerProfile) drawerProfile.style.display = 'flex';
     if (nameEl) nameEl.innerText = this.currentUser.username;
-    if (avatarEl) avatarEl.innerHTML = this.getUserAvatarHtml(this.currentUser.username, '26px', '1.2rem');
+    if (avatarEl) avatarEl.innerHTML = this.getUserAvatarHtml(this.currentUser.username, '28px', '1.2rem');
     if (roleEl) {
       if (this.currentUser.role === 'master') {
         roleEl.innerText = "👑 Master / Admin";
@@ -698,17 +722,18 @@ class FantaApp {
     const isUnlocked = isConfirmed || isMaster;
 
     document.querySelectorAll('[data-tab="classifica"], [data-tab="social"], [data-tab="secret"]').forEach(tab => {
+      const targetLabel = tab.querySelector('.mobile-nav-label, .nav-label, .drawer-item-label') || tab;
       if (!isUnlocked) {
         tab.classList.add('locked-nav');
         if (!tab.querySelector('.nav-lock-icon')) {
           const lockSpan = document.createElement('span');
           lockSpan.className = 'nav-lock-icon';
           lockSpan.innerText = ' 🔒';
-          tab.appendChild(lockSpan);
+          targetLabel.appendChild(lockSpan);
         }
       } else {
         tab.classList.remove('locked-nav');
-        tab.querySelector('.nav-lock-icon')?.remove();
+        tab.querySelectorAll('.nav-lock-icon').forEach(l => l.remove());
       }
     });
   }
@@ -791,10 +816,38 @@ class FantaApp {
 
     const statTeamsEl = document.getElementById('statConfirmedTeams');
     const statApprovedEl = document.getElementById('statApprovedEvents');
+    const heroApprovedCountEl = document.getElementById('heroApprovedCountText');
+
     if (statTeamsEl) statTeamsEl.innerText = `${confirmedCount} / 11`;
     if (statApprovedEl) statApprovedEl.innerText = approvedReports;
+    if (heroApprovedCountEl) {
+      heroApprovedCountEl.innerText = `${approvedReports} Event${approvedReports === 1 ? 'o' : 'i'} Approvat${approvedReports === 1 ? 'o' : 'i'}`;
+    }
 
     this.renderUserProfile('userProfilePanel');
+  }
+
+  toggleHeroBanner() {
+    const banner = document.getElementById('heroBanner');
+    const body = document.getElementById('heroBannerBody');
+    const toggleBtn = document.getElementById('btnHeroToggle');
+    if (!banner || !body) return;
+
+    const isExpanded = banner.classList.contains('expanded');
+    if (isExpanded) {
+      banner.classList.remove('expanded');
+      body.style.display = 'none';
+      if (toggleBtn) {
+        toggleBtn.innerHTML = '<span class="hero-toggle-label">Info & Regole</span> <span class="hero-toggle-arrow">▾</span>';
+      }
+    } else {
+      banner.classList.add('expanded');
+      body.style.display = 'block';
+      if (toggleBtn) {
+        toggleBtn.innerHTML = '<span class="hero-toggle-label">Comprimi</span> <span class="hero-toggle-arrow">▴</span>';
+      }
+    }
+    this.playSound('click');
   }
 
   // --- SECTION: BUILDER & SQUADRA MERCATO ---
@@ -1528,7 +1581,8 @@ class FantaApp {
   // --- SECTION: LEADERBOARD (CLASSIFICA) ---
   renderLeaderboard() {
     const tbody = document.getElementById('leaderboardBody');
-    if (!tbody) return;
+    const mobileList = document.getElementById('mobileLeaderboardList');
+    if (!tbody && !mobileList) return;
 
     const users = this.getData('fanta_users') || INITIAL_USERS;
     const teams = this.getData('fanta_teams') || {};
@@ -1556,57 +1610,150 @@ class FantaApp {
 
     ranks.sort((a, b) => b.totalPoints - a.totalPoints);
 
-    tbody.innerHTML = ranks.map((item, idx) => {
-      let rankBadgeClass = 'rank-other';
-      if (idx === 0) rankBadgeClass = 'rank-1';
-      else if (idx === 1) rankBadgeClass = 'rank-2';
-      else if (idx === 2) rankBadgeClass = 'rank-3';
+    // 1. VISTA DESKTOP (Tabella Completa >= 768px)
+    if (tbody) {
+      tbody.innerHTML = ranks.map((item, idx) => {
+        let rankBadgeClass = 'rank-other';
+        if (idx === 0) rankBadgeClass = 'rank-1';
+        else if (idx === 1) rankBadgeClass = 'rank-2';
+        else if (idx === 2) rankBadgeClass = 'rank-3';
 
-      const isCurrent = this.currentUser && (item.username === this.currentUser.username);
+        const isCurrent = this.currentUser && (item.username === this.currentUser.username);
 
-      let squadPills = '';
-      if (item.team.confirmed) {
-        const docPills = (item.team.docenti || []).map(docId => {
-          const d = DOCENTI.find(x => x.id === docId);
-          return d ? `<span class="char-tiny-pill">${d.avatar} ${d.nome}</span>` : '';
-        }).join('');
+        let squadPills = '';
+        if (item.team.confirmed) {
+          const docPills = (item.team.docenti || []).map(docId => {
+            const d = DOCENTI.find(x => x.id === docId);
+            return d ? `<span class="char-tiny-pill">${d.avatar} ${d.nome}</span>` : '';
+          }).join('');
 
-        const colObj = COLLEGHI.find(x => x.id === item.team.collega);
-        const colPill = colObj ? `<span class="char-tiny-pill collega-pill">${colObj.avatar} ${colObj.nome}</span>` : '';
+          const colObj = COLLEGHI.find(x => x.id === item.team.collega);
+          const colPill = colObj ? `<span class="char-tiny-pill collega-pill">${colObj.avatar} ${colObj.nome}</span>` : '';
 
-        squadPills = `<div class="team-pill-list">${docPills} ${colPill}</div>`;
-      } else {
-        squadPills = `<span style="font-size: 0.8rem; color: var(--text-dark); font-style: italic;">Squadra non ancora confermata</span>`;
-      }
+          squadPills = `<div class="team-pill-list">${docPills} ${colPill}</div>`;
+        } else {
+          squadPills = `<span style="font-size: 0.8rem; color: var(--text-dark); font-style: italic;">Squadra non ancora confermata</span>`;
+        }
 
-      return `
-        <tr style="${isCurrent ? 'background: rgba(139, 92, 246, 0.12);' : ''}">
-          <td style="width: 50px;">
-            <div class="rank-badge ${rankBadgeClass}">${idx + 1}</div>
-          </td>
-          <td>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              ${this.getUserAvatarHtml(item.username, '28px', '1.3rem')}
-              <div>
-                <strong style="color: #fff;">${item.username}</strong>
-                ${item.role === 'master' ? '<span class="user-badge-role role-master" style="margin-left: 6px;">MASTER</span>' : ''}
-                ${isCurrent ? '<span style="font-size: 0.7rem; color: #67e8f9; margin-left: 4px;">(TU)</span>' : ''}
+        return `
+          <tr style="${isCurrent ? 'background: rgba(139, 92, 246, 0.12);' : ''}">
+            <td style="width: 50px;">
+              <div class="rank-badge ${rankBadgeClass}">${idx + 1}</div>
+            </td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                ${this.getUserAvatarHtml(item.username, '28px', '1.3rem')}
+                <div>
+                  <strong style="color: #fff;">${item.username}</strong>
+                  ${item.role === 'master' ? '<span class="user-badge-role role-master" style="margin-left: 6px;">MASTER</span>' : ''}
+                  ${isCurrent ? '<span style="font-size: 0.7rem; color: #67e8f9; margin-left: 4px;">(TU)</span>' : ''}
+                </div>
+              </div>
+            </td>
+            <td>${squadPills}</td>
+            <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; color: #fbbf24;">
+              ${item.team.confirmed ? item.team.cfaSpesi + ' CFA' : '-'}
+            </td>
+            <td class="points-cell">${item.totalPoints} pt</td>
+            <td>
+              <button class="btn-recruit" style="padding: 4px 10px; font-size: 0.75rem;" onclick="app.inspectCoach('${item.username}')">
+                Dettagli
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 2. VISTA MOBILE (Fisarmonica Compatta Senza Scroll Orizzontale < 768px)
+    if (mobileList) {
+      mobileList.innerHTML = ranks.map((item, idx) => {
+        let rankBadgeClass = 'rank-other';
+        if (idx === 0) rankBadgeClass = 'rank-1';
+        else if (idx === 1) rankBadgeClass = 'rank-2';
+        else if (idx === 2) rankBadgeClass = 'rank-3';
+
+        const isCurrent = this.currentUser && (item.username === this.currentUser.username);
+
+        let squadPills = '';
+        if (item.team.confirmed) {
+          const docPills = (item.team.docenti || []).map(docId => {
+            const d = DOCENTI.find(x => x.id === docId);
+            return d ? `<span class="char-tiny-pill" style="font-size:0.75rem;">${d.avatar} ${d.nome}</span>` : '';
+          }).join('');
+
+          const colObj = COLLEGHI.find(x => x.id === item.team.collega);
+          const colPill = colObj ? `<span class="char-tiny-pill collega-pill" style="font-size:0.75rem;">${colObj.avatar} ${colObj.nome}</span>` : '';
+
+          squadPills = `<div class="mobile-squad-pills">${docPills} ${colPill}</div>`;
+        } else {
+          squadPills = `<span style="font-size: 0.78rem; color: var(--text-dark); font-style: italic;">Squadra non ancora confermata</span>`;
+        }
+
+        return `
+          <div class="mobile-rank-card ${isCurrent ? 'current-user-card' : ''}" id="mobileCard-${item.username}">
+            <div class="mobile-rank-header" onclick="app.toggleMobileSquadra('${item.username}')">
+              <div class="mobile-rank-left">
+                <div class="mobile-rank-badge ${rankBadgeClass}">${idx + 1}</div>
+                <div class="mobile-rank-coach-info">
+                  ${this.getUserAvatarHtml(item.username, '28px', '1.2rem')}
+                  <span class="mobile-rank-coach-name">${item.username}</span>
+                  ${item.role === 'master' ? '<span class="user-badge-role role-master" style="font-size:0.65rem;padding:1px 5px;">👑</span>' : ''}
+                  ${isCurrent ? '<span style="font-size:0.68rem;color:#67e8f9;font-weight:700;">(TU)</span>' : ''}
+                </div>
+              </div>
+
+              <div class="mobile-rank-right">
+                <div class="mobile-rank-points">${item.totalPoints} pt</div>
+                <button type="button" class="btn-mobile-squad-toggle" id="btnMobileSquad-${item.username}" aria-label="Mostra squadra">
+                  <span>Squadra</span>
+                  <span class="squad-arrow">▾</span>
+                </button>
               </div>
             </div>
-          </td>
-          <td>${squadPills}</td>
-          <td style="font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; color: #fbbf24;">
-            ${item.team.confirmed ? item.team.cfaSpesi + ' CFA' : '-'}
-          </td>
-          <td class="points-cell">${item.totalPoints} pt</td>
-          <td>
-            <button class="btn-recruit" style="padding: 4px 10px; font-size: 0.75rem;" onclick="app.inspectCoach('${item.username}')">
-              Dettagli
-            </button>
-          </td>
-        </tr>
-      `;
-    }).join('');
+
+            <!-- FISARMONICA SQUADRA (Nascosta di default, aperta al tocco) -->
+            <div class="mobile-rank-drawer" id="mobileSquadraDrawer-${item.username}">
+              <div class="mobile-rank-drawer-content">
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                  Squadra Schierata (4 Docenti + 1 Collega):
+                </div>
+                ${squadPills}
+                <div class="mobile-rank-actions-row">
+                  <span style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #fbbf24;">
+                    💰 ${item.team.confirmed ? item.team.cfaSpesi + ' CFA' : '-'}
+                  </span>
+                  <button type="button" class="btn-recruit" style="padding: 4px 10px; font-size: 0.75rem;" onclick="event.stopPropagation(); app.inspectCoach('${item.username}')">
+                    📜 Storico Punti
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+  }
+
+  toggleMobileSquadra(username) {
+    const drawer = document.getElementById(`mobileSquadraDrawer-${username}`);
+    const btn = document.getElementById(`btnMobileSquad-${username}`);
+    if (!drawer) return;
+    const isOpen = drawer.classList.contains('open');
+    if (isOpen) {
+      drawer.classList.remove('open');
+      if (btn) {
+        btn.classList.remove('active');
+        btn.innerHTML = '<span>Squadra</span> <span class="squad-arrow">▾</span>';
+      }
+    } else {
+      drawer.classList.add('open');
+      if (btn) {
+        btn.classList.add('active');
+        btn.innerHTML = '<span>Chiudi</span> <span class="squad-arrow">▴</span>';
+      }
+    }
+    this.playSound('click');
   }
 
   inspectCoach(username) {
@@ -1752,7 +1899,31 @@ class FantaApp {
           </div>
 
           ${r.foto ? `
-            <img src="${r.foto}" alt="Prova Segnalazione" class="report-media-preview" onerror="this.style.display='none'" />
+            <img src="${r.foto}" alt="Prova Segnalazione" class="report-media-preview" title="Tocca per ingrandire a tutto schermo" onclick="app.openImageLightbox('${this.escapeHtml(r.foto)}', '${this.escapeHtml(r.titolo)}', '${this.escapeHtml(r.autore)}')" onerror="this.style.display='none'" />
+          ` : ''}
+
+          ${(this.currentUser && this.currentUser.role === 'master') ? `
+            <div class="social-master-actions" style="margin-top: 12px; margin-bottom: 12px; padding: 12px 14px; background: rgba(139, 92, 246, 0.08); border: 1.5px solid rgba(139, 92, 246, 0.35); border-radius: var(--radius-sm);">
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+                <span style="color: #c084fc; font-weight: 800; font-size: 0.84rem; display: flex; align-items: center; gap: 6px;">
+                  👑 Azioni Master Dirette
+                  ${r.stato === 'approvata' ? '<span class="status-unlocked" style="font-size:0.7rem;padding:2px 6px;border-radius:4px;">✓ Approvata</span>' : ''}
+                  ${r.stato === 'rifiutata' ? '<span class="status-locked" style="font-size:0.7rem;padding:2px 6px;border-radius:4px;">✕ Rifiutata</span>' : ''}
+                </span>
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <label style="color: var(--text-muted); font-size: 0.8rem; font-weight: 600;">Pt:</label>
+                  <input type="number" id="masterPtEdit-${r.id}" value="${r.punti}" class="form-control" style="width: 75px; padding: 4px 8px; font-weight: 700; font-size: 0.88rem; height: 30px;">
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn-master-approve" style="flex: 1; min-width: 140px; padding: 8px 12px; font-size: 0.84rem; justify-content: center;" onclick="app.approveReport('${r.id}')">
+                  ✓ ${r.stato === 'approvata' ? 'Riconvalida' : 'Approva Segnalazione'}
+                </button>
+                <button type="button" class="btn-master-reject" style="flex: 1; min-width: 140px; padding: 8px 12px; font-size: 0.84rem; justify-content: center;" onclick="app.rejectReport('${r.id}')">
+                  ✕ Non Convalidare
+                </button>
+              </div>
+            </div>
           ` : ''}
 
           <div class="report-footer">
@@ -1791,6 +1962,16 @@ class FantaApp {
         </div>
       `;
     }).join('');
+  }
+
+  openImageLightbox(src, title = '', author = '') {
+    if (!src) return;
+    const imgEl = document.getElementById('lightboxImage');
+    const capEl = document.getElementById('lightboxCaption');
+    if (imgEl) imgEl.src = src;
+    if (capEl) capEl.innerHTML = `<strong>${title}</strong>${author ? ` • di ${author}` : ''}`;
+    this.openModal('imageLightboxModal');
+    this.playSound('click');
   }
 
   addComment(reportId) {
@@ -2494,14 +2675,14 @@ class FantaApp {
     const rep = reports.find(r => r.id === reportId);
     if (!rep) return;
 
-    // Lettura eventuale punteggio modificato dal Master
-    const editInput = document.getElementById(`masterPtEdit-${reportId}`);
-    if (editInput) {
-      const parsed = parseInt(editInput.value, 10);
-      if (!isNaN(parsed)) {
-        rep.punti = parsed;
+    // Lettura eventuale punteggio modificato dal Master (da Bacheca Social o Pannello Master)
+    const editInputs = document.querySelectorAll(`[id="masterPtEdit-${reportId}"]`);
+    editInputs.forEach(inp => {
+      if (inp && inp.value !== '') {
+        const parsed = parseInt(inp.value, 10);
+        if (!isNaN(parsed)) rep.punti = parsed;
       }
-    }
+    });
 
     rep.stato = 'approvata';
     this.saveData('fanta_reports', reports);
@@ -2945,10 +3126,12 @@ class FantaApp {
       data: { url }
     };
 
-    if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+    // Su smartphone (iOS PWA e Android Chrome) showNotification DEVE essere chiamato dal ServiceWorkerRegistration
+    if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready.then(reg => {
-        reg.showNotification(title, options);
-      }).catch(() => {
+        return reg.showNotification(title, options);
+      }).catch(err => {
+        console.warn('[Push Notification SW error]', err);
         try { new Notification(title, options); } catch (e) {}
       });
     } else {
@@ -2982,7 +3165,7 @@ class FantaApp {
           }
         });
 
-        // 2. Modifiche di stato (approvata o rifiutata dal Master)
+        // 2. Modifiche di stato (approvata dal Master - esclusi i rifiuti su richiesta utente)
         val.forEach(rep => {
           const old = this._prevReportsSnapshot.find(prev => prev.id === rep.id);
           if (old && old.stato !== rep.stato) {
@@ -2995,16 +3178,8 @@ class FantaApp {
               );
               this.showToast(`🎉 Segnalazione convalidata dal Master: <b>${rep.titolo}</b> (+${rep.punti}pt)`, 'success');
               this.playSound('bonus');
-            } else if (rep.stato === 'rifiutata') {
-              this.sendSystemNotification(
-                "❌ Segnalazione Non Convalidata",
-                `Il Master ha respinto la segnalazione: "${rep.titolo}"`,
-                "./index.html#social",
-                "rep-status-" + rep.id
-              );
-              this.showToast(`❌ Segnalazione non convalidata: <b>${rep.titolo}</b>`, 'danger');
-              this.playSound('glitch');
             }
+            // NOTA: Se rep.stato === 'rifiutata', NESSUNA notifica push inviata (espressamente richiesto dal Master)
           }
 
           // 3. Nuovi commenti su una segnalazione
