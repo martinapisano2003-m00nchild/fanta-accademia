@@ -134,37 +134,43 @@
   </aside>
 
   <!-- ============================================================
-       TOP HEADER (CON PULSANTE MENU HAMBURGER A SINISTRA)
+       TOP HEADER (LAYOUT 2 LIVELLI SU MOBILE, RIGA SINGOLA SU PC)
        ============================================================ -->
   <header class="app-header">
-    <div class="header-left-group">
-      <button type="button" class="drawer-toggle-btn" id="drawerToggleBtn" aria-label="Apri menu" onclick="app.toggleDrawer()">
-        <span class="drawer-hamburger">
-          <span></span>
-          <span></span>
-          <span></span>
-        </span>
-        <span class="drawer-toggle-label">Menu</span>
-      </button>
-
-      <div class="header-brand" onclick="app.switchTab('home')">
-        <div class="brand-logo">🏛️</div>
-        <div class="brand-text">
-          <h1>FANTA-ACCADEMIA</h1>
-          <span>Edizione 2026</span>
+    <div class="header-inner">
+      <!-- RIGA 1: TITOLO A TUTTA LARGHEZZA -->
+      <div class="header-brand-col">
+        <div class="header-brand" onclick="app.switchTab('home')">
+          <div class="brand-logo">🏛️</div>
+          <div class="brand-text">
+            <h1>FANTA-ACCADEMIA</h1>
+            <span>Edizione 2026</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="header-right">
-      <button class="user-badge-btn" id="userBadgeBtn" title="Gestisci Profilo">
-        <span class="user-badge-avatar" id="headerUserAvatar">👤</span>
-        <span class="user-badge-name" id="headerUserName" style="display: none;">Accedi</span>
-        <span class="user-badge-role" id="headerUserRole" style="display: none;">Allenatore</span>
-      </button>
+      <!-- RIGA 2: BARRA CONTROLLI (MENU A SINISTRA, UTILITY A DESTRA) -->
+      <div class="header-nav-col">
+        <button type="button" class="drawer-toggle-btn" id="drawerToggleBtn" aria-label="Apri menu" onclick="app.toggleDrawer()">
+          <span class="drawer-hamburger">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
+          <span class="drawer-toggle-label">Menu</span>
+        </button>
 
-      <button class="icon-btn" id="soundToggleBtn" title="Attiva/Disattiva Suoni">🔊</button>
-      <button class="icon-btn" onclick="app.lockGatekeeper()" title="Blocca Sito (Schermata Password)">🔒</button>
+        <div class="header-right">
+          <button class="user-badge-btn" id="userBadgeBtn" title="Gestisci Profilo">
+            <span class="user-badge-avatar" id="headerUserAvatar">👤</span>
+            <span class="user-badge-name" id="headerUserName" style="display: none;">Accedi</span>
+            <span class="user-badge-role" id="headerUserRole" style="display: none;">Allenatore</span>
+          </button>
+
+          <button class="icon-btn" id="soundToggleBtn" title="Attiva/Disattiva Suoni">🔊</button>
+          <button class="icon-btn" onclick="app.lockGatekeeper()" title="Blocca Sito (Schermata Password)">🔒</button>
+        </div>
+      </div>
     </div>
   </header>
 

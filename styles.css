@@ -283,53 +283,114 @@ h1, h2, h3, h4, .hero-title, .section-title, .brand-text h1, .drawer-titles h3, 
   position: sticky;
   top: 0;
   z-index: 1000;
-  background: var(--header-bg, rgba(9, 13, 22, 0.92));
+  background: var(--header-bg, rgba(9, 13, 22, 0.94));
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border-bottom: 1px solid var(--border-color);
-  padding: max(14px, env(safe-area-inset-top, 14px)) max(16px, env(safe-area-inset-right, 16px)) 10px max(16px, env(safe-area-inset-left, 16px));
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  padding: max(16px, calc(env(safe-area-inset-top, 16px) + 8px)) max(16px, env(safe-area-inset-right, 16px)) 12px max(16px, env(safe-area-inset-left, 16px));
   transition: background 0.4s ease, border-color 0.4s ease;
 }
 
-.header-brand {
+.header-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.header-brand-col {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  width: 100%;
+}
+
+.header-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
   text-decoration: none;
   cursor: pointer;
 }
 
 .brand-logo {
-  font-size: 1.6rem;
+  font-size: 1.8rem;
   filter: drop-shadow(0 0 10px var(--primary-glow));
+}
+
+.brand-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .brand-text h1 {
   font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
-  font-size: 1.15rem;
+  font-size: 1.35rem;
   font-weight: 800;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
   color: var(--primary);
   line-height: 1.1;
   text-shadow: 0 0 16px var(--primary-glow);
+  white-space: nowrap;
 }
 
 .brand-text span {
-  font-size: 0.65rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  letter-spacing: 1.5px;
+  letter-spacing: 2px;
   color: var(--secondary);
   text-transform: uppercase;
+}
+
+.header-nav-col {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .header-right {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+@media (min-width: 768px) {
+  .app-header {
+    padding-top: max(14px, env(safe-area-inset-top, 14px));
+    padding-bottom: 12px;
+  }
+
+  .header-inner {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .header-brand-col {
+    width: auto;
+    justify-content: flex-start;
+  }
+
+  .brand-text {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .brand-text h1 {
+    font-size: 1.25rem;
+  }
+
+  .header-nav-col {
+    width: auto;
+    justify-content: flex-end;
+    gap: 16px;
+  }
 }
 
 .user-badge-btn {
@@ -549,7 +610,10 @@ body.drawer-open {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px;
+  padding-top: max(22px, calc(env(safe-area-inset-top, 22px) + 14px));
+  padding-left: max(18px, env(safe-area-inset-left, 18px));
+  padding-right: max(18px, env(safe-area-inset-right, 18px));
+  padding-bottom: 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.25);
 }
@@ -673,8 +737,19 @@ body.drawer-open {
   color: #fca5a5;
 }
 
+.drawer-badge-pill {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: auto;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  white-space: nowrap;
+}
+
 .drawer-footer {
-  padding: 14px 16px;
+  padding: 14px 16px max(24px, calc(env(safe-area-inset-bottom, 24px) + 8px)) 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.2);
   display: flex;

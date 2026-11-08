@@ -151,26 +151,14 @@ class FantaApp {
   }
 
   initStorage() {
-    // Avvia l'autenticazione anonima sicura
-    this.initFirebaseAuth();
-
-    // v4: Firebase è la fonte di verità per le chiavi condivise.
-    // NON cancelliamo mai dati esistenti — solo aggiorniamo utenti locali e avviamo i listener.
-    // La prima volta che un dispositivo si connette, Firebase popolerà la cache tramite i listener.
-    // firebaseInitIfEmpty scrive i dati default SOLO se Firebase è completamente vuoto (primo avvio assoluto).
-    if (localStorage.getItem('fanta_initialized_v4') !== 'true') {
-      // Solo al primissimo avvio assoluto: inizializza Firebase con dati default (se vuoto)
-      this.firebaseInitIfEmpty('fanta_teams', INITIAL_TEAMS);
-      this.firebaseInitIfEmpty('fanta_notices', INITIAL_NOTICES);
-      this.firebaseInitIfEmpty('fanta_reports', INITIAL_REPORTS);
-      this.firebaseInitIfEmpty('fanta_tips', MASTER_TIPS);
-      this.firebaseInitIfEmpty('fanta_profiles', {});
-      localStorage.setItem('fanta_initialized_v4', 'true');
-    }
-    // Sempre: aggiorna credenziali utenti locali (mai su Firebase)
+    // 1. Sempre: aggiorna credenziali utenti locali (mai su Firebase)
     localStorage.setItem('fanta_users', JSON.stringify(INITIAL_USERS));
-    // Avvia i listener in tempo reale di Firebase
+
+    // 2. Avvia subito i listener Firebase in tempo reale
     this.startFirebaseListeners();
+
+    // 3. Autenticazione di background
+    this.initFirebaseAuth();
   }
 
   firebaseInitIfEmpty(key, defaultVal) {
