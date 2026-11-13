@@ -179,8 +179,15 @@ class FantaApp {
     // Ascolta cambiamenti in tempo reale e aggiorna la UI
     this.FIREBASE_KEYS.forEach(key => {
       window.fantaDB.ref(key).on('value', snap => {
-        const val = snap.val();
+        let val = snap.val();
         if (val !== null) {
+          // Se reports, notices o tips arrivano come oggetto (Firebase dictionary), converti in array per la UI
+          if (['fanta_reports', 'fanta_notices', 'fanta_tips'].includes(key) && typeof val === 'object' && !Array.isArray(val)) {
+            val = Object.values(val).filter(Boolean);
+            if (key === 'fanta_reports') {
+              val.sort((a, b) => (b.id || '').localeCompare(a.id || ''));
+            }
+          }
           // Notifiche di sistema push sul dispositivo per nuovi eventi
           this.handleFirebaseRealtimeNotification(key, val);
           // Cache locale per accesso sincrono
@@ -199,7 +206,22 @@ class FantaApp {
       if (this.FIREBASE_KEYS.includes(key)) {
         // Legge dalla cache locale aggiornata dai listener Firebase
         const cached = localStorage.getItem('_fb_cache_' + key);
-        if (cached) return JSON.parse(cached);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          // Per le liste (reports, notices, tips) garantisce sempre la restituzione di un array
+          if (['fanta_reports', 'fanta_notices', 'fanta_tips'].includes(key)) {
+            if (Array.isArray(parsed)) return parsed.filter(Boolean);
+            if (typeof parsed === 'object' && parsed !== null) {
+              const list = Object.values(parsed).filter(Boolean);
+              if (key === 'fanta_reports') {
+                return list.sort((a, b) => (b.id || '').localeCompare(a.id || ''));
+              }
+              return list;
+            }
+            return [];
+          }
+          return parsed;
+        }
         // Fallback ai dati iniziali se la cache non è ancora pronta
         const defaults = { 
           fanta_teams: INITIAL_TEAMS, 
@@ -218,8 +240,14 @@ class FantaApp {
 
   saveData(key, val) {
     if (this.FIREBASE_KEYS.includes(key) && window.fantaDB) {
-      // Scrivi su Firebase (il listener aggiornerà automaticamente la cache locale e la UI)
-      window.fantaDB.ref(key).set(val).catch(e => console.warn('Firebase write error', key, e));
+      if (key === 'fanta_reports' && Array.isArray(val)) {
+        // Converte in oggetto indicizzato per ID per prevenire array sparsi e race conditions
+        const obj = {};
+        val.forEach(r => { if (r && r.id) obj[r.id] = r; });
+        window.fantaDB.ref(key).update(obj).catch(e => console.warn('Firebase write error', key, e));
+      } else {
+        window.fantaDB.ref(key).set(val).catch(e => console.warn('Firebase write error', key, e));
+      }
       // Aggiorna anche la cache locale immediatamente per risposta UI istantanea
       localStorage.setItem('_fb_cache_' + key, JSON.stringify(val));
     } else {
@@ -1984,7 +2012,12 @@ class FantaApp {
       data: new Date().toLocaleDateString('it-IT') + ' ' + new Date().toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
     });
 
-    this.saveData('fanta_reports', reports);
+    // Scrittura atomica mirata solo ai commenti di questo specifico report su Firebase
+    if (window.fantaDB) {
+      window.fantaDB.ref(`fanta_reports/${reportId}/commenti`).set(rep.commenti)
+        .catch(e => console.warn('Errore salvataggio commento Firebase', e));
+    }
+    localStorage.setItem('_fb_cache_fanta_reports', JSON.stringify(reports));
     this._prevReportsSnapshot = JSON.parse(JSON.stringify(reports));
     input.value = '';
     this.playSound('coin');
@@ -2015,7 +2048,15 @@ class FantaApp {
       rep.voters[this.currentUser.username] = voteVal;
     }
 
-    this.saveData('fanta_reports', reports);
+    // Scrittura atomica mirata solo ai voti di questo specifico report su Firebase
+    if (window.fantaDB) {
+      window.fantaDB.ref(`fanta_reports/${reportId}`).update({
+        voters: rep.voters || {},
+        upvotes: rep.upvotes || 0,
+        downvotes: rep.downvotes || 0
+      }).catch(e => console.warn('Errore salvataggio voto Firebase', e));
+    }
+    localStorage.setItem('_fb_cache_fanta_reports', JSON.stringify(reports));
     this.playSound('click');
     this.renderSocialFeed();
   }
@@ -2673,7 +2714,13 @@ class FantaApp {
     });
 
     rep.stato = 'approvata';
-    this.saveData('fanta_reports', reports);
+    if (window.fantaDB) {
+      window.fantaDB.ref(`fanta_reports/${reportId}`).update({
+        stato: 'approvata',
+        punti: rep.punti
+      }).catch(e => console.warn('Errore approvazione Firebase', e));
+    }
+    localStorage.setItem('_fb_cache_fanta_reports', JSON.stringify(reports));
     this._prevReportsSnapshot = JSON.parse(JSON.stringify(reports));
 
     // Supporto sia singolo personaggio che multi-personaggi
@@ -2732,7 +2779,12 @@ class FantaApp {
     if (!rep) return;
 
     rep.stato = 'rifiutata';
-    this.saveData('fanta_reports', reports);
+    if (window.fantaDB) {
+      window.fantaDB.ref(`fanta_reports/${reportId}`).update({
+        stato: 'rifiutata'
+      }).catch(e => console.warn('Errore rifiuto Firebase', e));
+    }
+    localStorage.setItem('_fb_cache_fanta_reports', JSON.stringify(reports));
     this._prevReportsSnapshot = JSON.parse(JSON.stringify(reports));
 
     // Auto-pubblicazione avviso ufficiale in Home
@@ -2911,7 +2963,12 @@ class FantaApp {
         };
 
         reports.unshift(newRep);
-        this.saveData('fanta_reports', reports);
+        // Scrittura atomica del nuovo report su Firebase (nessun rischio di sovrascrittura altri report)
+        if (window.fantaDB) {
+          window.fantaDB.ref(`fanta_reports/${newRep.id}`).set(newRep)
+            .catch(e => console.warn('Errore creazione report Firebase', e));
+        }
+        localStorage.setItem('_fb_cache_fanta_reports', JSON.stringify(reports));
         this._prevReportsSnapshot = JSON.parse(JSON.stringify(reports));
 
         this.playSound('success');
@@ -3107,8 +3164,6 @@ class FantaApp {
 
     const options = {
       body,
-      icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>",
-      badge: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>",
       tag: tag || 'fanta-notif-' + Date.now(),
       renotify: true,
       data: { url }
@@ -3130,126 +3185,208 @@ class FantaApp {
   handleFirebaseRealtimeNotification(key, val) {
     if (!val) return;
 
+    // Helper: normalizza qualsiasi struttura dati (array o dizionario Firebase) in un array pulito
+    const toArray = (data) => {
+      if (!data) return [];
+      if (Array.isArray(data)) return data.filter(Boolean);
+      if (typeof data === 'object') return Object.values(data).filter(Boolean);
+      return [];
+    };
+
     if (key === 'fanta_reports') {
+      const currentList = toArray(val);
       if (!this._prevReportsSnapshot) {
-        this._prevReportsSnapshot = JSON.parse(JSON.stringify(val));
+        this._prevReportsSnapshot = currentList;
         return;
       }
-      if (Array.isArray(val)) {
-        // 1. Nuove segnalazioni aggiunte da altri coach
-        val.forEach(rep => {
-          const exists = this._prevReportsSnapshot.some(prev => prev.id === rep.id);
-          if (!exists) {
-            if (rep.autore !== this.currentUser?.username) {
-              this.sendSystemNotification(
-                "📸 Nuova Segnalazione!",
-                `${rep.autore} ha pubblicato: "${rep.titolo}" (${rep.personaggioNome || 'Personaggio'})`,
-                "./index.html#social",
-                "rep-" + rep.id
-              );
-              this.showToast(`📸 Nuova segnalazione pubblicata da <b>${rep.autore}</b>: ${rep.titolo}`, 'info');
-              this.playSound('coin');
-            }
-          }
-        });
+      const prevList = toArray(this._prevReportsSnapshot);
 
-        // 2. Modifiche di stato (approvata dal Master - esclusi i rifiuti su richiesta utente)
-        val.forEach(rep => {
-          const old = this._prevReportsSnapshot.find(prev => prev.id === rep.id);
-          if (old && old.stato !== rep.stato) {
-            if (rep.stato === 'approvata') {
-              this.sendSystemNotification(
-                "🎉 Segnalazione Approvata!",
-                `Il Master ha approvato: "${rep.titolo}" (+${rep.punti}pt)`,
-                "./index.html#social",
-                "rep-status-" + rep.id
-              );
-              this.showToast(`🎉 Segnalazione convalidata dal Master: <b>${rep.titolo}</b> (+${rep.punti}pt)`, 'success');
-              this.playSound('bonus');
-            }
-            // NOTA: Se rep.stato === 'rifiutata', NESSUNA notifica push inviata (espressamente richiesto dal Master)
+      // 1. Nuove segnalazioni aggiunte da altri coach
+      currentList.forEach(rep => {
+        if (!rep || !rep.id) return;
+        const exists = prevList.some(prev => prev && prev.id === rep.id);
+        if (!exists) {
+          if (rep.autore !== this.currentUser?.username) {
+            this.sendSystemNotification(
+              "📸 Nuova Segnalazione!",
+              `${rep.autore} ha pubblicato: "${rep.titolo}" (${rep.personaggiNomi || rep.personaggioNome || 'Personaggio'})`,
+              "./index.html#social",
+              "rep-" + rep.id
+            );
+            this.showToast(`📸 Nuova segnalazione pubblicata da <b>${rep.autore}</b>: ${rep.titolo}`, 'info');
+            this.playSound('coin');
           }
+        }
+      });
 
-          // 3. Nuovi commenti su una segnalazione
-          if (old && Array.isArray(rep.commenti)) {
-            const oldCount = Array.isArray(old.commenti) ? old.commenti.length : 0;
-            if (rep.commenti.length > oldCount) {
-              const newComments = rep.commenti.slice(oldCount);
-              newComments.forEach(comm => {
-                if (comm.autore !== this.currentUser?.username) {
-                  this.sendSystemNotification(
-                    "💬 Nuovo Commento!",
-                    `${comm.autore} su "${rep.titolo}": "${comm.testo}"`,
-                    "./index.html#social",
-                    "comment-" + (comm.id || Date.now())
-                  );
-                  this.showToast(`💬 Nuovo commento di <b>${comm.autore}</b> su "${rep.titolo}"`, 'info');
-                  this.playSound('click');
-                }
-              });
-            }
+      // 2. Modifiche di stato (approvata dal Master - esclusi i rifiuti su richiesta utente)
+      currentList.forEach(rep => {
+        if (!rep || !rep.id) return;
+        const old = prevList.find(prev => prev && prev.id === rep.id);
+        if (old && old.stato !== rep.stato) {
+          if (rep.stato === 'approvata') {
+            this.sendSystemNotification(
+              "🎉 Segnalazione Approvata!",
+              `Il Master ha approvato: "${rep.titolo}" (+${rep.punti}pt)`,
+              "./index.html#social",
+              "rep-status-" + rep.id
+            );
+            this.showToast(`🎉 Segnalazione convalidata dal Master: <b>${rep.titolo}</b> (+${rep.punti}pt)`, 'success');
+            this.playSound('bonus');
           }
-        });
-      }
-      this._prevReportsSnapshot = JSON.parse(JSON.stringify(val));
+        }
+
+        // 3. Nuovi commenti su una segnalazione
+        if (old) {
+          const oldCommenti = toArray(old.commenti);
+          const currentCommenti = toArray(rep.commenti);
+          if (currentCommenti.length > oldCommenti.length) {
+            const newComments = currentCommenti.slice(oldCommenti.length);
+            newComments.forEach(comm => {
+              if (comm && comm.autore !== this.currentUser?.username) {
+                this.sendSystemNotification(
+                  "💬 Nuovo Commento!",
+                  `${comm.autore} su "${rep.titolo}": "${comm.testo}"`,
+                  "./index.html#social",
+                  "comment-" + (comm.id || Date.now())
+                );
+                this.showToast(`💬 Nuovo commento di <b>${comm.autore}</b> su "${rep.titolo}"`, 'info');
+                this.playSound('click');
+              }
+            });
+          }
+        }
+      });
+
+      this._prevReportsSnapshot = currentList;
     }
 
     if (key === 'fanta_notices') {
+      const currentList = toArray(val);
       if (!this._prevNoticesSnapshot) {
-        this._prevNoticesSnapshot = JSON.parse(JSON.stringify(val));
+        this._prevNoticesSnapshot = currentList;
         return;
       }
-      if (Array.isArray(val)) {
-        val.forEach(notice => {
-          const exists = this._prevNoticesSnapshot.some(prev => prev.id === notice.id);
-          if (!exists) {
-            // Notifica avvisi diretti del Master (escludendo gli esiti automatici già notificati sopra)
-            if (notice.tipo !== 'RISULTATO SEGNALAZIONE') {
-              this.sendSystemNotification(
-                "📢 Avviso del Master!",
-                `${notice.titolo}: ${notice.testo}`,
-                "./index.html#home",
-                "notice-" + notice.id
-              );
-              this.showToast(`📢 Nuovo avviso in Home: <b>${notice.titolo}</b>`, 'info');
-              this.playSound('coin');
-            }
+      const prevList = toArray(this._prevNoticesSnapshot);
+
+      currentList.forEach(notice => {
+        if (!notice || !notice.id) return;
+        const exists = prevList.some(prev => prev && prev.id === notice.id);
+        if (!exists) {
+          // Notifica avvisi diretti del Master (escludendo gli esiti automatici già notificati sopra)
+          if (notice.tipo !== 'RISULTATO SEGNALAZIONE') {
+            this.sendSystemNotification(
+              "📢 Avviso del Master!",
+              `${notice.titolo}: ${notice.testo}`,
+              "./index.html#home",
+              "notice-" + notice.id
+            );
+            this.showToast(`📢 Nuovo avviso in Home: <b>${notice.titolo}</b>`, 'info');
+            this.playSound('coin');
           }
-        });
-      }
-      this._prevNoticesSnapshot = JSON.parse(JSON.stringify(val));
+        }
+      });
+      this._prevNoticesSnapshot = currentList;
     }
 
     if (key === 'fanta_tips') {
+      const currentList = toArray(val);
       if (!this._prevTipsSnapshot) {
-        this._prevTipsSnapshot = JSON.parse(JSON.stringify(val));
+        this._prevTipsSnapshot = currentList;
         return;
       }
-      if (Array.isArray(val)) {
-        val.forEach(tip => {
-          const exists = this._prevTipsSnapshot.some(prev => prev.id === tip.id);
-          if (!exists) {
-            // Notifica SOLO a chi ha Martina in squadra (Masi, Mar) oppure Master
-            const teams = this.getData('fanta_teams') || {};
-            const myTeam = this.currentUser ? teams[this.currentUser.username] : null;
-            const hasMartina = myTeam && myTeam.confirmed && myTeam.collega === 'collega-martina';
-            const isMaster = this.currentUser && this.currentUser.role === 'master';
+      const prevList = toArray(this._prevTipsSnapshot);
 
-            if (hasMartina || isMaster) {
-              this.sendSystemNotification(
-                "👑 Nuova Soffiata del Master!",
-                `Nuovo suggerimento segreto per chi ha Martina in squadra: "${tip.titolo}"`,
-                "./index.html#soffiate",
-                "tip-" + tip.id
-              );
-              this.showToast(`👑 Nuova Soffiata del Master: <b>${tip.titolo}</b>`, 'bonus');
-              this.playSound('bonus');
-            }
+      currentList.forEach(tip => {
+        if (!tip || !tip.id) return;
+        const exists = prevList.some(prev => prev && prev.id === tip.id);
+        if (!exists) {
+          // Notifica SOLO a chi ha Martina in squadra (Masi, Mar) oppure Master
+          const teams = this.getData('fanta_teams') || {};
+          const myTeam = this.currentUser ? teams[this.currentUser.username] : null;
+          const hasMartina = myTeam && myTeam.confirmed && myTeam.collega === 'collega-martina';
+          const isMaster = this.currentUser && this.currentUser.role === 'master';
+
+          if (hasMartina || isMaster) {
+            this.sendSystemNotification(
+              "👑 Nuova Soffiata del Master!",
+              `Nuovo suggerimento segreto per chi ha Martina in squadra: "${tip.titolo}"`,
+              "./index.html#soffiate",
+              "tip-" + tip.id
+            );
+            this.showToast(`👑 Nuova Soffiata del Master: <b>${tip.titolo}</b>`, 'bonus');
+            this.playSound('bonus');
+          }
+        }
+      });
+      this._prevTipsSnapshot = currentList;
+    }
+  }
+
+  // --- STRUMENTI DI SICUREZZA & BACKUP DATABASE (PANNELLO MASTER) ---
+  downloadDatabaseBackup() {
+    if (!this.currentUser || this.currentUser.role !== 'master') {
+      this.showToast("Accesso riservato al Master!", "danger");
+      return;
+    }
+    const backupData = {
+      timestamp: new Date().toISOString(),
+      dateFormatted: new Date().toLocaleString('it-IT'),
+      exportedBy: this.currentUser.username,
+      fanta_teams: this.getData('fanta_teams'),
+      fanta_reports: this.getData('fanta_reports'),
+      fanta_notices: this.getData('fanta_notices'),
+      fanta_tips: this.getData('fanta_tips'),
+      fanta_profiles: this.getData('fanta_profiles')
+    };
+
+    const jsonStr = JSON.stringify(backupData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `backup_fanta_accademia_${Date.now()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    this.playSound('success');
+    this.showToast("📥 Backup completo scaricato con successo sul tuo dispositivo!", "success");
+  }
+
+  restoreDatabaseBackup(inputEl) {
+    if (!this.currentUser || this.currentUser.role !== 'master') {
+      this.showToast("Accesso riservato al Master!", "danger");
+      return;
+    }
+    const file = inputEl.files && inputEl.files[0];
+    if (!file) return;
+
+    if (!confirm("⚠️ SEI SICURA DI VOLER RIPRISTINARE I DATI DA QUESTO FILE?\nTutti i dati attuali di squadre, punti e post verranno sovrascritti con quelli del backup selezionato.")) {
+      inputEl.value = '';
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target.result);
+        const keys = ['fanta_teams', 'fanta_reports', 'fanta_notices', 'fanta_tips', 'fanta_profiles'];
+        keys.forEach(k => {
+          if (data[k] !== undefined) {
+            this.saveData(k, data[k]);
           }
         });
+        this.playSound('success');
+        this.showToast("✅ Dati ripristinati con successo dal backup!", "success");
+        this.render();
+      } catch (err) {
+        console.error("Errore ripristino backup", err);
+        this.showToast("❌ Errore nel file di backup JSON! Verifica che sia un file valido.", "danger");
       }
-      this._prevTipsSnapshot = JSON.parse(JSON.stringify(val));
-    }
+      inputEl.value = '';
+    };
+    reader.readAsText(file);
   }
 
   // --- MASTER DIRECT EVENT HANDLER ---
